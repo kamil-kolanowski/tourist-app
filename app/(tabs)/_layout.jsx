@@ -25,7 +25,7 @@ const TabIcon = ({ focused, icon }) => {
   );
 };
 
-const _Layout = () => {
+const TabsLayout = () => {
   return (
     <Tabs
       screenOptions={{
@@ -68,10 +68,10 @@ const _Layout = () => {
         }}
       />
       <Tabs.Screen
-        name="saved"
+        name="add-place"
         options={{
           headerShown: false,
-          title: "Saved",
+          title: "Add Place",
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} icon={icons.saved} />
           ),
@@ -91,4 +91,4 @@ const _Layout = () => {
   );
 };
 
-export default _Layout;
+export default TabsLayout;
