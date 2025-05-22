@@ -2,28 +2,38 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { Text, TextInput, Button, Surface, Card } from "react-native-paper";
 import { useLocalSearchParams, router } from "expo-router";
-import { auth, db } from "../../../FirebaseConfig";
-import { collection, addDoc } from "firebase/firestore";
+import { useAuth } from "../../../contexts/AuthContext";
+// Zaimportuj nową usługę
+import { addReviewAndUpdateRating } from "../../../services/ReviewService";
 
-export default function AddReview() {
+const AddReview = () => {
   const { id } = useLocalSearchParams();
   const [rating, setRating] = useState(3);
   const [review, setReview] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const handleSubmit = async () => {
-    try {
-      const reviewData = {
-        placeId: id,
-        userId: auth.currentUser.uid,
-        rating,
-        review,
-        createdAt: new Date().toISOString(),
-      };
+    if (!user) {
+      alert("Musisz być zalogowany, aby dodać opinię");
+      return;
+    }
 
-      await addDoc(collection(db, "reviews"), reviewData);
-      router.back();
+    setLoading(true);
+    try {
+      // Użyj nowej funkcji do dodania recenzji i aktualizacji ocen
+      await addReviewAndUpdateRating(id, user.id, rating, review);
+
+      // Sukces - wróć do szczegółów miejsca z parametrem do odświeżenia
+      router.replace({
+        pathname: `/places/${id}`,
+        params: { refresh: Date.now() },
+      });
     } catch (error) {
-      console.error("Error adding review:", error);
+      console.error("Błąd dodawania opinii:", error);
+      alert("Wystąpił błąd podczas dodawania opinii");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,11 +68,18 @@ export default function AddReview() {
             style={{ marginBottom: 16 }}
           />
 
-          <Button mode="contained" onPress={handleSubmit}>
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
+            loading={loading}
+            disabled={loading}
+          >
             Zapisz opinię
           </Button>
         </Card.Content>
       </Card>
     </Surface>
   );
-}
+};
+
+export default AddReview;

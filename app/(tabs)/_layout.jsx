@@ -1,7 +1,8 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { Image, View } from "react-native";
+import { Tabs, useRouter } from "expo-router";
 import { icons } from "@/assets/constants/icons";
+import { useAuth } from "../../contexts/AuthContext";
 
 const TabIcon = ({ focused, icon }) => {
   return (
@@ -26,6 +27,17 @@ const TabIcon = ({ focused, icon }) => {
 };
 
 const TabsLayout = () => {
+  const { user, isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Sprawdź po załadowaniu czy użytkownik jest zalogowany
+    if (!loading && !isAuthenticated) {
+      console.log("TabsLayout: użytkownik nie zalogowany, przekierowanie");
+      router.replace("/auth/login");
+    }
+  }, [loading, isAuthenticated]);
+
   return (
     <Tabs
       screenOptions={{

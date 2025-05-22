@@ -1,21 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View } from "react-native";
 import { TextInput, Button, Text, Surface } from "react-native-paper";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../FirebaseConfig";
+import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
 
-function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signIn, user, isAuthenticated } = useAuth();
+
+  // Dodaj efekt, który sprawdza stan autentykacji
+  useEffect(() => {
+    console.log("Login - stan auth:", { isAuthenticated, userId: user?.id });
+    if (isAuthenticated && user) {
+      console.log("Użytkownik już zalogowany, przekierowuję do (tabs)");
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, user]);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      setError("Email i hasło są wymagane");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Wyświetl dane logowania (tylko do debugowania)
+    console.log("Próba logowania z danymi:", {
+      email,
+      passwordLength: password.length,
+    });
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { error: signInError } = await signIn(email, password);
+
+      if (signInError) {
+        console.error("Błąd logowania:", signInError);
+        setError(signInError.message);
+        return;
+      }
+
+      console.log("Logowanie zakończone sukcesem, przekierowanie");
       router.replace("/(tabs)");
     } catch (error) {
-      setError(error.message);
+      console.error("Złapany błąd podczas logowania:", error);
+      setError("Wystąpił błąd podczas logowania");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,6 +92,8 @@ function Login() {
           mode="contained"
           onPress={handleLogin}
           style={{ marginBottom: 12 }}
+          loading={loading}
+          disabled={loading}
         >
           Zaloguj się
         </Button>
@@ -67,6 +104,6 @@ function Login() {
       </View>
     </Surface>
   );
-}
+};
 
 export default Login;

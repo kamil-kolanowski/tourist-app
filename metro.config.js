@@ -1,7 +1,11 @@
 const { getDefaultConfig } = require("@expo/metro-config");
 
 const config = getDefaultConfig(__dirname);
-config.resolver.resolverMainFields = ["react-native", "browser", "main"];
-config.resolver.sourceExts.push("cjs");
+
+config.resolver.sourceExts = ["jsx", "js", "ts", "tsx", "cjs", "json"];
+config.resolver.assetExts = ["ttf", "png", "jpg"];
+
+// Nie potrzebujemy już żadnych specjalnych modułów
+config.resolver.extraNodeModules = {};
 
 module.exports = config;

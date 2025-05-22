@@ -1,49 +1,96 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView } from "react-native";
+import { View, ScrollView, RefreshControl } from "react-native";
 import { Text, Button, Surface, List, Card } from "react-native-paper";
-import { collection, getDocs } from "firebase/firestore";
-import { auth, db } from "../../FirebaseConfig";
-import { router } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
+import { router, useLocalSearchParams } from "expo-router";
+import { db } from "../../SimpleSupabaseClient";
 
-export default function HomeScreen() {
+const HomeScreen = () => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const { signOut } = useAuth();
+  const params = useLocalSearchParams();
 
+  // Dodaj log do sprawdzenia czy miejsca są pobierane
+  console.log("Aktualne miejsca:", places.length);
+
+  // Dodaj efekt, który będzie nasłuchiwał na zmiany parametrów
+  useEffect(() => {
+    console.log("Parametry zmieniły się:", params);
+    fetchPlaces();
+  }, [params.refresh]);
+
+  // Zawsze wywołaj fetchPlaces przy montowaniu komponentu
   useEffect(() => {
     fetchPlaces();
   }, []);
 
   const fetchPlaces = async () => {
     try {
-      const placesCollection = collection(db, "places");
-      const placesSnapshot = await getDocs(placesCollection);
-      const placesList = placesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setPlaces(placesList);
+      console.log("Pobieranie miejsc...");
+      setLoading(true);
+
+      const { data, error } = await db.from("places").select("*");
+
+      if (error) {
+        console.error("Błąd pobierania miejsc:", error);
+        throw error;
+      }
+
+      console.log("Pobrano miejsc:", data?.length || 0);
+      setPlaces(data || []);
     } catch (error) {
       console.error("Error fetching places:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPlaces();
   };
 
   return (
     <Surface style={{ flex: 1 }}>
-      <ScrollView style={{ padding: 16 }}>
+      <ScrollView
+        style={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <Card style={{ marginBottom: 16 }}>
           <Card.Content>
             <Text variant="titleLarge">Witaj w Tourist App</Text>
             <Text variant="bodyMedium">Odkryj nowe miejsca w okolicy</Text>
+            <Button
+              icon="refresh"
+              mode="text"
+              onPress={fetchPlaces}
+              loading={loading && !refreshing}
+              style={{ marginTop: 8 }}
+            >
+              Odśwież listę
+            </Button>
           </Card.Content>
         </Card>
 
         <Text variant="titleMedium" style={{ marginBottom: 8 }}>
-          Popularne miejsca
+          Popularne miejsca {places.length > 0 ? `(${places.length})` : ""}
         </Text>
 
-        {loading ? (
+        {loading && !refreshing ? (
           <Text>Ładowanie...</Text>
         ) : places.length === 0 ? (
           <Text>Brak dostępnych miejsc</Text>
@@ -65,10 +112,7 @@ export default function HomeScreen() {
 
         <Button
           mode="outlined"
-          onPress={async () => {
-            await auth.signOut();
-            router.replace("/");
-          }}
+          onPress={handleSignOut}
           style={{ marginTop: 16 }}
         >
           Wyloguj się
@@ -76,4 +120,6 @@ export default function HomeScreen() {
       </ScrollView>
     </Surface>
   );
-}
+};
+
+export default HomeScreen;
