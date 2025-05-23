@@ -1,19 +1,32 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, ScrollView } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Platform,
+  Linking,
+  Dimensions,
+} from "react-native";
 import {
   Text,
-  Button,
   Surface,
   Card,
-  List,
-  IconButton,
-  Divider,
+  Button,
   Avatar,
-  Chip,
+  Divider,
+  IconButton,
+  useTheme as usePaperTheme,
 } from "react-native-paper";
-import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { db } from "../../SimpleSupabaseClient";
+import { useFocusEffect } from "@react-navigation/native";
 import { fetchReviewsWithUserData } from "../../services/ReviewService";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+// Pobierz szerokość ekranu do obliczenia wymiarów
+const { width } = Dimensions.get("window");
+const contentWidth = width * 0.95; // 95% szerokości ekranu (było 90%)
+const imageWidth = width * 0.9; // 90% szerokości ekranu (było 80%)
 
 const PlaceDetails = () => {
   const { id } = useLocalSearchParams();
@@ -21,10 +34,18 @@ const PlaceDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const paperTheme = usePaperTheme();
 
   // Dodajemy nowe stany dla ocen
   const [averageRating, setAverageRating] = useState(0);
   const [ratingsCount, setRatingsCount] = useState(0);
+
+  // Efekt do aktualizacji tytułu nagłówka
+  useEffect(() => {
+    if (place) {
+      router.setParams({ title: place.category });
+    }
+  }, [place]);
 
   // Funkcja do pobierania danych miejsca i opinii
   const loadData = useCallback(async () => {
@@ -49,54 +70,21 @@ const PlaceDetails = () => {
       console.log("Dane miejsca pobrane pomyślnie:", placeData?.name);
       setPlace(placeData);
 
+      // Ustaw dane o ocenach
+      if (placeData) {
+        setAverageRating(placeData.rating || 0);
+        setRatingsCount(placeData.ratings_count || 0);
+      }
+
       // Pobierz wszystkie opinie
       console.log("Pobieranie opinii dla miejsca:", id);
       try {
         const reviewsData = await fetchReviewsWithUserData(id);
-        console.log("Pobrano opinii:", reviewsData?.length || 0);
-        setReviews(reviewsData || []);
-
-        // Oblicz średnią ocenę z opinii
-        if (reviewsData && reviewsData.length > 0) {
-          const totalRating = reviewsData.reduce(
-            (sum, review) => sum + review.rating,
-            0
-          );
-          const avgRating = totalRating / reviewsData.length;
-          const roundedRating = Math.round(avgRating * 10) / 10; // Zaokrąglenie do 1 miejsca po przecinku
-
-          console.log(
-            "Nowa średnia ocena:",
-            roundedRating,
-            "z",
-            reviewsData.length,
-            "opinii"
-          );
-          setAverageRating(roundedRating);
-          setRatingsCount(reviewsData.length);
-
-          // Zaktualizuj dane miejsca z nowymi obliczeniami
-          try {
-            await db.from("places").eq("id", id).update({
-              rating: roundedRating,
-              ratings_count: reviewsData.length,
-            });
-            console.log("Zaktualizowano rating miejsca w bazie danych");
-          } catch (updateError) {
-            console.error("Błąd podczas aktualizacji oceny:", updateError);
-            // Nie przerywamy działania, nawet jeśli aktualizacja się nie powiedzie
-          }
-        } else {
-          console.log("Brak opinii - ustawiam domyślne wartości");
-          setAverageRating(0);
-          setRatingsCount(0);
-        }
+        console.log(`Pobrano ${reviewsData.length} opinii dla miejsca ${id}`);
+        setReviews(reviewsData);
       } catch (reviewsError) {
-        console.error("Błąd podczas pobierania opinii:", reviewsError);
-        // Nawet jeśli wystąpi błąd z opiniami, kontynuujemy wyświetlanie danych miejsca
+        console.error("Błąd pobierania opinii:", reviewsError);
         setReviews([]);
-        setAverageRating(0);
-        setRatingsCount(0);
       }
     } catch (error) {
       console.error("Error loading place data:", error);
@@ -123,9 +111,9 @@ const PlaceDetails = () => {
         <IconButton
           key={i}
           icon={i <= roundedRating ? "star" : "star-outline"}
-          size={20}
+          size={18}
           iconColor={i <= roundedRating ? "#FFD700" : "#AAAAAA"}
-          style={{ margin: 0, padding: 0 }}
+          style={{ margin: 0, padding: 0, width: 20 }}
         />
       );
     }
@@ -133,11 +121,34 @@ const PlaceDetails = () => {
     return (
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         {stars}
-        <Text style={{ marginLeft: 5 }}>
-          {averageRating.toFixed(1)} ({ratingsCount})
-        </Text>
       </View>
     );
+  };
+
+  // Funkcja do nawigacji w Google Maps
+  const openGoogleMaps = () => {
+    if (!place?.address) return;
+
+    // Przygotuj adres do nawigacji
+    const address = encodeURIComponent(place.address);
+
+    // Różne URI scheme w zależności od platformy
+    const mapsUrl = Platform.select({
+      default: `https://www.google.com/maps/search/?api=1&query=${address}`,
+    });
+
+    // Sprawdź czy możemy otworzyć URL
+    Linking.canOpenURL(mapsUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(mapsUrl);
+        } else {
+          console.log("Nie można otworzyć Google Maps");
+        }
+      })
+      .catch((err) => {
+        console.error("Błąd podczas otwierania Google Maps:", err);
+      });
   };
 
   if (loading) {
@@ -161,121 +172,317 @@ const PlaceDetails = () => {
   }
 
   return (
-    <Surface style={{ flex: 1 }}>
-      <ScrollView>
-        <Card style={{ margin: 16 }}>
-          <Card.Content>
-            <Text variant="headlineMedium">{place?.name}</Text>
-            <Chip
-              icon="tag"
-              style={{ marginVertical: 8, alignSelf: "flex-start" }}
-            >
-              {place?.category}
-            </Chip>
-            <View style={{ marginVertical: 8 }}>
-              {renderRatingStars(averageRating)}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
+      edges={["top"]}
+    >
+      <Surface style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Zdjęcie na górze - 90% szerokości */}
+          <View style={styles.imageContainer}>
+            {place?.image_url && (
+              <Card.Cover
+                source={{ uri: place.image_url }}
+                style={[styles.coverImage, { width: imageWidth }]}
+              />
+            )}
+          </View>
+
+          <View style={[styles.container, { width: contentWidth }]}>
+            {/* Górna sekcja - nazwa, adres, oceny */}
+            <View style={styles.headerSection}>
+              {/* Lewa strona - nazwa i adres */}
+              <View style={styles.leftHeader}>
+                <Text variant="titleLarge" style={styles.placeName}>
+                  {place?.name}
+                </Text>
+                <View style={styles.addressContainer}>
+                  <IconButton
+                    icon="map-marker"
+                    size={20}
+                    style={styles.addressIcon}
+                  />
+                  <Text variant="bodyMedium" style={styles.address}>
+                    {place?.address}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Prawa strona - oceny */}
+              <View style={styles.rightHeader}>
+                <View style={styles.ratingsContainer}>
+                  {renderRatingStars(averageRating)}
+                  <Text style={styles.ratingsCount}>
+                    {ratingsCount}{" "}
+                    {ratingsCount === 1
+                      ? "ocena"
+                      : ratingsCount % 10 >= 2 &&
+                          ratingsCount % 10 <= 4 &&
+                          (ratingsCount % 100 < 10 || ratingsCount % 100 >= 20)
+                        ? "oceny"
+                        : "ocen"}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Divider style={{ marginVertical: 10 }} />
-            <Text variant="bodyLarge" style={{ marginTop: 8 }}>
+
+            {/* Opis miejsca */}
+            <Divider style={styles.divider} />
+            <Text variant="bodyLarge" style={styles.description}>
               {place?.description}
             </Text>
-            <View
-              style={{
-                marginTop: 16,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <IconButton icon="map-marker" size={24} />
-              <Text variant="bodyMedium" style={{ flex: 1 }}>
-                {place?.address}
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
 
-        <Card style={{ margin: 16 }}>
-          <Card.Title
-            title={`Opinie (${reviews.length})`}
-            right={(props) => (
+            {/* Przyciski akcji */}
+            <View style={styles.buttonsContainer}>
+              <Button
+                mode="contained"
+                icon="comment-plus"
+                onPress={() =>
+                  router.push({
+                    pathname: `/places/reviews/${id}`,
+                    params: {
+                      placeName: place.name,
+                      placeAddress: place.address,
+                    },
+                  })
+                }
+                style={styles.actionButton}
+              >
+                Dodaj opinię
+              </Button>
+
+              <Button
+                mode="contained"
+                icon="navigation"
+                onPress={openGoogleMaps}
+                style={styles.actionButton}
+              >
+                Nawiguj
+              </Button>
+            </View>
+
+            {/* Sekcja opinii */}
+            <Divider style={styles.divider} />
+            <View style={styles.reviewsHeaderContainer}>
+              <Text variant="titleLarge" style={styles.reviewsHeader}>
+                Opinie ({reviews.length})
+              </Text>
               <IconButton
-                {...props}
                 icon="refresh"
                 onPress={loadData}
                 loading={refreshing}
+                size={24}
               />
-            )}
-          />
-          <Card.Content>
+            </View>
+
+            {/* Lista opinii */}
             {reviews.length === 0 ? (
-              <Text>Brak opinii. Dodaj pierwszą!</Text>
+              <Text style={styles.noReviews}>Brak opinii. Dodaj pierwszą!</Text>
             ) : (
-              reviews.map((review) => (
-                <Card key={review.id} style={{ marginBottom: 12 }}>
-                  <Card.Content>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <Avatar.Text
-                        size={24}
-                        label={
-                          review?.user?.user_metadata?.username
-                            ? review.user.user_metadata.username
-                                .substring(0, 2)
-                                .toUpperCase()
-                            : "U"
-                        }
-                      />
-                      <View style={{ marginLeft: 10, flex: 1 }}>
-                        <Text variant="titleMedium">
-                          {review?.user?.user_metadata?.username ||
-                            "Użytkownik"}
-                        </Text>
-                        <View
-                          style={{ flexDirection: "row", alignItems: "center" }}
-                        >
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <IconButton
-                              key={star}
-                              icon={
-                                star <= review.rating ? "star" : "star-outline"
-                              }
-                              size={16}
-                              iconColor={
-                                star <= review.rating ? "#FFD700" : "#AAAAAA"
-                              }
-                              style={{ margin: 0, padding: 0 }}
-                            />
-                          ))}
-                          <Text variant="bodySmall" style={{ marginLeft: 5 }}>
-                            {new Date(review.created_at).toLocaleDateString()}
+              <View style={styles.reviewsContainer}>
+                {reviews.map((review) => (
+                  <Card key={review.id} style={styles.reviewCard}>
+                    <Card.Content>
+                      <View style={styles.reviewHeader}>
+                        {review?.user?.user_metadata?.avatar_url ? (
+                          <Avatar.Image
+                            size={32}
+                            source={{
+                              uri: review.user.user_metadata.avatar_url,
+                            }}
+                          />
+                        ) : (
+                          <Avatar.Text
+                            size={32}
+                            label={
+                              review?.user?.user_metadata?.username
+                                ? review.user.user_metadata.username
+                                    .substring(0, 2)
+                                    .toUpperCase()
+                                : "U"
+                            }
+                          />
+                        )}
+                        <View style={styles.reviewAuthorContainer}>
+                          <Text
+                            variant="titleMedium"
+                            style={styles.reviewAuthor}
+                          >
+                            {review?.user?.user_metadata?.username ||
+                              "Użytkownik"}
                           </Text>
+                          <View style={styles.reviewRatingContainer}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <IconButton
+                                key={star}
+                                icon={
+                                  star <= review.rating
+                                    ? "star"
+                                    : "star-outline"
+                                }
+                                size={16}
+                                iconColor={
+                                  star <= review.rating ? "#FFD700" : "#AAAAAA"
+                                }
+                                style={styles.reviewStar}
+                              />
+                            ))}
+                            <Text variant="bodySmall" style={styles.reviewDate}>
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
-                    <Text variant="bodyMedium">{review.review}</Text>
-                  </Card.Content>
-                </Card>
-              ))
+                      <Text variant="bodyMedium" style={styles.reviewContent}>
+                        {review.review}
+                      </Text>
+                    </Card.Content>
+                  </Card>
+                ))}
+              </View>
             )}
-
-            <Button
-              mode="contained"
-              onPress={() => router.push(`/places/reviews/${id}`)}
-              style={{ marginTop: 16 }}
-              icon="comment-plus"
-            >
-              Dodaj opinię
-            </Button>
-          </Card.Content>
-        </Card>
-      </ScrollView>
-    </Surface>
+          </View>
+        </ScrollView>
+      </Surface>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: "center", // Wyśrodkuj zawartość poziomo
+    paddingTop: 0, // Usunięcie górnego paddingu aby zlikwidować belkę
+    paddingBottom: 40, // Dodaj padding na dole
+  },
+  imageContainer: {
+    alignItems: "center",
+    paddingTop: 0, // Zmniejszono z 16 na 0 aby usunąć belkę
+    width: "100%",
+  },
+  coverImage: {
+    height: 220,
+    borderRadius: 12,
+  },
+  container: {
+    padding: 16,
+    alignSelf: "center", // Wyśrodkuj kontener
+  },
+  headerSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    alignItems: "flex-start",
+    width: "100%",
+    marginTop: 8, // Dodano trochę miejsca od góry po usunięciu paddingu
+  },
+  leftHeader: {
+    flex: 3,
+    paddingRight: 16,
+  },
+  rightHeader: {
+    flex: 2,
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+  },
+  ratingsContainer: {
+    alignItems: "flex-end",
+  },
+  placeName: {
+    fontWeight: "bold",
+    marginBottom: 8,
+    fontSize: 22,
+  },
+  addressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  addressIcon: {
+    margin: 0,
+    padding: 0,
+  },
+  address: {
+    flex: 1,
+  },
+  ratingsCount: {
+    marginTop: 4,
+    textAlign: "right",
+  },
+  divider: {
+    marginVertical: 16,
+    width: "100%",
+  },
+  description: {
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  buttonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+    width: "100%",
+  },
+  actionButton: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  reviewsHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    width: "100%",
+  },
+  reviewsHeader: {
+    fontWeight: "bold",
+  },
+  noReviews: {
+    marginVertical: 16,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
+  reviewsContainer: {
+    width: "100%",
+    alignItems: "center",
+  },
+  reviewCard: {
+    marginBottom: 16,
+    width: "100%", // Pełna szerokość w kontenerze rodzica
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  reviewAuthorContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  reviewAuthor: {
+    fontWeight: "bold",
+  },
+  reviewRatingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  reviewStar: {
+    margin: 0,
+    padding: 0,
+    width: 20,
+  },
+  reviewDate: {
+    marginLeft: 8,
+  },
+  reviewContent: {
+    marginTop: 8,
+    lineHeight: 20,
+  },
+});
 
 export default PlaceDetails;

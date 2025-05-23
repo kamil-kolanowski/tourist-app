@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
-import { TextInput, Button, Text, Surface } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { TextInput, Button, Text, Surface, useTheme } from "react-native-paper";
 import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +17,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, user, isAuthenticated } = useAuth();
+  const theme = useTheme();
 
   // Dodaj efekt, który sprawdza stan autentykacji
   useEffect(() => {
@@ -55,55 +63,118 @@ const Login = () => {
   };
 
   return (
-    <Surface style={{ flex: 1 }}>
-      <View style={{ padding: 20, flex: 1, justifyContent: "center" }}>
-        <Text
-          variant="headlineMedium"
-          style={{ textAlign: "center", marginBottom: 20 }}
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <Surface style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         >
-          Logowanie
-        </Text>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.contentContainer}>
+              {/* Nagłówek Tourist App */}
+              <Text variant="headlineLarge" style={styles.appTitle}>
+                Tourist App
+              </Text>
 
-        <TextInput
-          mode="outlined"
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          style={{ marginBottom: 12 }}
-        />
+              {/* Podtytuł Zaloguj się */}
+              <Text variant="headlineSmall" style={styles.subtitle}>
+                Logowanie
+              </Text>
 
-        <TextInput
-          mode="outlined"
-          label="Hasło"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={{ marginBottom: 12 }}
-        />
+              {/* Etykieta E-mail */}
+              <Text style={styles.inputLabel}>E-mail</Text>
 
-        {error && (
-          <Text style={{ color: "red", marginBottom: 12, textAlign: "center" }}>
-            {error}
-          </Text>
-        )}
+              {/* Input do emaila */}
+              <TextInput
+                mode="outlined"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+              />
 
-        <Button
-          mode="contained"
-          onPress={handleLogin}
-          style={{ marginBottom: 12 }}
-          loading={loading}
-          disabled={loading}
-        >
-          Zaloguj się
-        </Button>
+              {/* Etykieta Hasło */}
+              <Text style={styles.inputLabel}>Hasło</Text>
 
-        <Button mode="text" onPress={() => router.push("/auth/register")}>
-          Nie masz konta? Zarejestruj się
-        </Button>
-      </View>
-    </Surface>
+              {/* Input do hasła */}
+              <TextInput
+                mode="outlined"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={styles.input}
+              />
+
+              {error && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {error}
+                </Text>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={handleLogin}
+                style={styles.button}
+                loading={loading}
+                disabled={loading}
+              >
+                Zaloguj się
+              </Button>
+
+              <Button mode="text" onPress={() => router.push("/auth/register")}>
+                Nie masz konta? Zarejestruj się
+              </Button>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Surface>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  contentContainer: {
+    padding: 20,
+    flex: 1,
+    justifyContent: "center",
+  },
+  appTitle: {
+    fontWeight: "bold",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  subtitle: {
+    marginBottom: 32,
+    textAlign: "center",
+  },
+  inputLabel: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  input: {
+    marginBottom: 20,
+  },
+  errorText: {
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  button: {
+    marginBottom: 16,
+    paddingVertical: 6,
+  },
+});
 
 export default Login;

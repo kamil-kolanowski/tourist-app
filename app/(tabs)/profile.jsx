@@ -1,142 +1,162 @@
 import React, { useState, useEffect } from "react";
-import { View } from "react-native";
+import { View, ScrollView, StyleSheet, Image } from "react-native";
 import {
   Text,
   Avatar,
-  List,
   Button,
   Surface,
-  TextInput,
   Card,
-  IconButton,
-  MD3Colors,
+  useTheme as usePaperTheme,
+  Divider,
 } from "react-native-paper";
 import { router } from "expo-router";
 import { db } from "../../SimpleSupabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const Profile = () => {
-  const [task, setTask] = useState("");
-  const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user, session, signOut, isAuthenticated } = useAuth();
+  const [userProfile, setUserProfile] = useState(null);
+  const [reviewsCount, setReviewsCount] = useState(0);
+  const [lastVisitedPlace, setLastVisitedPlace] = useState(null);
+  const { user, signOut, isAuthenticated } = useAuth();
+  const paperTheme = usePaperTheme();
+  const { isDarkTheme } = useTheme();
+
+  // Funkcja pomocnicza do określania kolorów na podstawie bieżącego motywu
+  const getThemeColors = () => {
+    return {
+      cardBackgroundColor: isDarkTheme ? "#333333" : "#E0E0E0", // Ciemniejszy w trybie ciemnym
+      placeholderBackgroundColor: isDarkTheme ? "#555555" : "#BDBDBD",
+      placeholderTextColor: isDarkTheme ? "#AAAAAA" : "#757575",
+      textColor: isDarkTheme ? "#FFFFFF" : "#000000",
+      secondaryTextColor: isDarkTheme ? "#CCCCCC" : "rgba(0, 0, 0, 0.7)",
+      logoutButtonColor: "#f44336", // Czerwony dla obu trybów
+    };
+  };
+
+  const colors = getThemeColors();
 
   console.log("Profile - stan auth:", {
     isAuthenticated,
     hasUser: !!user,
     userId: user?.id,
-    email: user?.email,
-    sessionExists: !!session,
   });
 
-  useEffect(() => {
-    if (user?.id) {
-      console.log("Pobieranie todos dla użytkownika:", user.id);
-      fetchTodos();
-    } else {
-      console.log("Brak użytkownika do pobrania todos");
-      setLoading(false);
-    }
-  }, [user?.id]); // Zmień zależność na user?.id
-
-  const fetchTodos = async () => {
+  // Funkcja do pobierania profilu użytkownika
+  const fetchUserProfile = async () => {
     try {
-      console.log("Pobieranie zadań dla użytkownika", user.id);
+      if (!user?.id) return;
+
+      // Zmiana kolejności wywołań - najpierw eq, potem select
       const { data, error } = await db
-        .from("todos")
+        .from("profiles")
+        .eq("id", user.id)
+        .select("*");
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        console.log("Pobrano profil użytkownika:", data[0]);
+        setUserProfile(data[0]);
+      }
+    } catch (error) {
+      console.error("Błąd pobierania profilu:", error);
+    }
+  };
+
+  // Funkcja do pobierania liczby opinii użytkownika
+  const fetchUserReviewsCount = async () => {
+    try {
+      if (!user?.id) return;
+
+      // Zmiana kolejności wywołań - najpierw eq, potem select
+      const { data, error } = await db
+        .from("reviews")
+        .eq("user_id", user.id)
+        .select("id");
+
+      if (error) throw error;
+      if (data) {
+        console.log("Liczba opinii użytkownika:", data.length);
+        setReviewsCount(data.length);
+      }
+    } catch (error) {
+      console.error("Błąd pobierania liczby opinii:", error);
+    }
+  };
+
+  // Funkcja do pobierania ostatnio odwiedzonego miejsca
+  const fetchLastVisitedPlace = async () => {
+    try {
+      if (!user?.id) return;
+
+      // Użyj bezpośredniego zapytania REST API zamiast metody order
+      const headers = {
+        apikey:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
+        "Content-Type": "application/json",
+        Authorization: user?.id
+          ? `Bearer ${user.id}`
+          : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
+      };
+
+      // Pobierz wszystkie opinie użytkownika
+      const { data: reviewsData, error: reviewError } = await db
+        .from("reviews")
         .eq("user_id", user.id)
         .select("*");
 
-      if (error) {
-        console.error("Błąd pobierania todos:", error);
-        throw error;
-      }
+      if (reviewError) throw reviewError;
 
-      console.log("Pobrano zadania:", data?.length || 0);
-      setTodos(data || []);
+      if (reviewsData && reviewsData.length > 0) {
+        // Ręczne sortowanie po stronie klienta
+        const sortedReviews = [...reviewsData].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        // Weź najnowszą opinię
+        const lastReview = sortedReviews[0];
+
+        // Pobierz dane miejsca na podstawie ostatniej opinii
+        const { data: placeData, error: placeError } = await db
+          .from("places")
+          .eq("id", lastReview.place_id)
+          .select("*");
+
+        if (placeError) throw placeError;
+
+        if (placeData && placeData.length > 0) {
+          console.log("Ostatnio odwiedzone miejsce:", placeData[0].name);
+          setLastVisitedPlace(placeData[0]);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching todos:", error);
-    } finally {
+      console.error("Błąd pobierania ostatnio odwiedzonego miejsca:", error);
+    }
+  };
+
+  // Załaduj wszystkie potrzebne dane po załadowaniu komponentu
+  useEffect(() => {
+    if (user?.id) {
+      console.log("Pobieranie danych dla użytkownika:", user.id);
+      const loadUserData = async () => {
+        setLoading(true);
+        await fetchUserProfile();
+        await fetchUserReviewsCount();
+        await fetchLastVisitedPlace();
+        setLoading(false);
+      };
+
+      loadUserData();
+    } else {
+      console.log("Brak użytkownika do pobrania danych profilu");
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  // Dodaj implementację funkcji addTodo
-  const addTodo = async () => {
-    if (!task.trim() || !user) return;
-
-    try {
-      setLoading(true);
-      console.log("Dodawanie nowego zadania:", task);
-
-      const { data, error } = await db.from("todos").insert([
-        {
-          task,
-          completed: false,
-          user_id: user.id,
-        },
-      ]);
-
-      if (error) {
-        console.error("Błąd dodawania zadania:", error);
-        throw error;
-      }
-
-      setTask("");
-      await fetchTodos();
-    } catch (error) {
-      console.error("Error adding todo:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Dodaj implementację funkcji updateTodo
-  const updateTodo = async (id, completed) => {
-    try {
-      console.log("Aktualizacja zadania:", id, "completed:", !completed);
-
-      const { error } = await db
-        .from("todos")
-        .eq("id", id)
-        .update({ completed: !completed });
-
-      if (error) {
-        console.error("Błąd aktualizacji zadania:", error);
-        throw error;
-      }
-
-      await fetchTodos();
-    } catch (error) {
-      console.error("Error updating todo:", error);
-    }
-  };
-
-  // Dodaj implementację funkcji deleteTodo
-  const deleteTodo = async (id) => {
-    try {
-      console.log("Usuwanie zadania:", id);
-
-      const { error } = await db.from("todos").eq("id", id).delete();
-
-      if (error) {
-        console.error("Błąd usuwania zadania:", error);
-        throw error;
-      }
-
-      await fetchTodos();
-    } catch (error) {
-      console.error("Error deleting todo:", error);
-    }
-  };
-
-  // Dodaj implementację funkcji handleRefresh
-  const handleRefresh = async () => {
-    console.log("Odświeżanie listy zadań");
-    await fetchTodos();
-  };
-
-  // Dodaj implementację funkcji handleSignOut
+  // Funkcja do wylogowania
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -146,21 +166,22 @@ const Profile = () => {
     }
   };
 
-  // Dodaj nowy warunek dla niezalogowanego użytkownika
+  // Warunek dla niezalogowanego użytkownika
   if (!isAuthenticated || !user) {
     console.log("Przekierowanie do logowania z profilu");
-    // Zaczekaj chwilę, aby mieć pewność że to nie jest tymczasowy stan ładowania
     const timer = setTimeout(() => {
       router.replace("/auth/login");
     }, 300);
 
     return (
-      <Surface
+      <SafeAreaView
         style={{
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
+          backgroundColor: paperTheme.colors.background,
         }}
+        edges={["top"]}
       >
         <Text>Nie jesteś zalogowany</Text>
         <Button
@@ -170,109 +191,269 @@ const Profile = () => {
         >
           Zaloguj się
         </Button>
-      </Surface>
+      </SafeAreaView>
     );
   }
 
   return (
-    <Surface style={{ flex: 1 }}>
-      <Card style={{ margin: 16 }}>
-        <Card.Title
-          title={user?.user_metadata?.username || "Użytkownik"}
-          subtitle={user.email}
-          left={(props) => (
-            <Avatar.Image
-              {...props}
-              size={48}
-              source={{
-                uri:
-                  user?.user_metadata?.avatar_url ||
-                  "https://via.placeholder.com/150",
-              }}
-            />
-          )}
-        />
-      </Card>
-
-      <List.Section>
-        <List.Item
-          title="Ulubione miejsca"
-          left={(props) => <List.Icon {...props} icon="heart" />}
-          onPress={() => {}}
-        />
-        <List.Item
-          title="Historia"
-          left={(props) => <List.Icon {...props} icon="history" />}
-          onPress={() => {}}
-        />
-        <List.Item
-          title="Edytuj profil"
-          left={(props) => <List.Icon {...props} icon="account-edit" />}
-          onPress={() => {}}
-        />
-      </List.Section>
-
-      <Card style={{ margin: 16 }}>
-        <Card.Title
-          title="Lista zadań"
-          right={(props) => (
-            <IconButton {...props} icon="refresh" onPress={handleRefresh} />
-          )}
-        />
-        <Card.Content>
-          <View style={{ flexDirection: "row", marginBottom: 16 }}>
-            <TextInput
-              mode="outlined"
-              label="Nowe zadanie"
-              value={task}
-              onChangeText={setTask}
-              style={{ flex: 1, marginRight: 8 }}
-            />
-            <Button
-              mode="contained"
-              onPress={addTodo}
-              loading={loading}
-              disabled={loading}
-            >
-              Dodaj
-            </Button>
-          </View>
-
-          {todos.map((item) => (
-            <List.Item
-              key={item.id}
-              title={item.task}
-              titleStyle={{
-                textDecorationLine: item.completed ? "line-through" : "none",
-              }}
-              right={() => (
-                <View style={{ flexDirection: "row" }}>
-                  <IconButton
-                    icon={item.completed ? "undo" : "check"}
-                    onPress={() => updateTodo(item.id, item.completed)}
-                  />
-                  <IconButton
-                    icon="delete"
-                    iconColor={MD3Colors.error50}
-                    onPress={() => deleteTodo(item.id)}
-                  />
-                </View>
-              )}
-            />
-          ))}
-        </Card.Content>
-      </Card>
-
-      <Button
-        mode="contained"
-        onPress={handleSignOut}
-        style={{ margin: 16 }}
-        buttonColor={MD3Colors.error50}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
+      edges={["top"]}
+    >
+      <Surface
+        style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
       >
-        Wyloguj się
-      </Button>
-    </Surface>
+        <ScrollView style={styles.container}>
+          {/* Nagłówek */}
+          <Text variant="headlineMedium" style={styles.header}>
+            Twój profil
+          </Text>
+
+          {/* Sekcja danych użytkownika */}
+          <Card style={styles.profileCard}>
+            <Card.Content style={styles.profileContent}>
+              {/* Zdjęcie profilowe po lewej */}
+              <View style={styles.avatarContainer}>
+                <Avatar.Image
+                  size={80}
+                  source={{
+                    uri:
+                      userProfile?.avatar_url ||
+                      user?.user_metadata?.avatar_url ||
+                      "https://via.placeholder.com/150",
+                  }}
+                />
+              </View>
+
+              {/* Dane użytkownika po prawej */}
+              <View style={styles.userInfoContainer}>
+                <Text variant="titleLarge" style={styles.username}>
+                  {userProfile?.username ||
+                    user?.user_metadata?.username ||
+                    "Użytkownik"}
+                </Text>
+                <Text variant="bodyMedium" style={styles.userEmail}>
+                  {user?.email}
+                </Text>
+                <Text variant="bodyMedium" style={styles.reviewsCount}>
+                  Liczba opinii: {reviewsCount}
+                </Text>
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* Sekcja ostatnio odwiedzonego miejsca */}
+          <Text
+            variant="titleLarge"
+            style={[styles.sectionTitle, { color: colors.textColor }]}
+          >
+            Ostatnio odwiedzone miejsce
+          </Text>
+
+          {lastVisitedPlace ? (
+            // Zawijanie w View aby rozwiązać problem z overflow: hidden i cieniami
+            <View style={styles.cardWrapper}>
+              <Card
+                style={[
+                  styles.lastPlaceCard,
+                  { backgroundColor: colors.cardBackgroundColor },
+                ]}
+                onPress={() => router.push(`/places/${lastVisitedPlace.id}`)}
+              >
+                <View style={styles.cardInnerWrapper}>
+                  {/* Zdjęcie po lewej stronie */}
+                  <View style={styles.lastPlaceImageContainer}>
+                    {lastVisitedPlace.image_url ? (
+                      <Image
+                        source={{ uri: lastVisitedPlace.image_url }}
+                        style={styles.lastPlaceImage}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.lastPlacePlaceholder,
+                          {
+                            backgroundColor: colors.placeholderBackgroundColor,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.lastPlacePlaceholderText,
+                            { color: colors.placeholderTextColor },
+                          ]}
+                        >
+                          Brak zdjęcia
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Treść po prawej stronie */}
+                  <View style={styles.lastPlaceInfo}>
+                    <Text
+                      variant="titleMedium"
+                      style={[
+                        styles.lastPlaceName,
+                        { color: colors.textColor },
+                      ]}
+                    >
+                      {lastVisitedPlace.name}
+                    </Text>
+                    <Text
+                      variant="bodyMedium"
+                      style={[
+                        styles.lastPlaceAddress,
+                        { color: colors.secondaryTextColor },
+                      ]}
+                    >
+                      {lastVisitedPlace.address}
+                    </Text>
+                  </View>
+                </View>
+              </Card>
+            </View>
+          ) : (
+            <Card
+              style={[
+                styles.emptyPlaceCard,
+                { backgroundColor: colors.cardBackgroundColor },
+              ]}
+            >
+              <Card.Content>
+                <Text
+                  variant="bodyLarge"
+                  style={[
+                    styles.emptyPlaceText,
+                    { color: colors.secondaryTextColor },
+                  ]}
+                >
+                  Nie odwiedziłeś jeszcze żadnego miejsca
+                </Text>
+              </Card.Content>
+            </Card>
+          )}
+
+          {/* Przycisk wylogowania */}
+          <Button
+            mode="contained"
+            onPress={handleSignOut}
+            style={styles.logoutButton}
+            contentStyle={styles.logoutButtonContent}
+          >
+            Wyloguj się
+          </Button>
+        </ScrollView>
+      </Surface>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  header: {
+    fontWeight: "bold",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  profileCard: {
+    marginBottom: 24,
+    borderRadius: 16, // Zwiększone zaokrąglenie rogów
+  },
+  profileContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  avatarContainer: {
+    marginRight: 16,
+  },
+  userInfoContainer: {
+    flex: 1,
+  },
+  username: {
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  userEmail: {
+    marginBottom: 4,
+    opacity: 0.7,
+  },
+  reviewsCount: {
+    fontWeight: "500",
+  },
+  sectionTitle: {
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  // Zmiany dla kafelka ostatnio odwiedzonego miejsca
+  cardWrapper: {
+    marginBottom: 24,
+    borderRadius: 20, // Zaokrąglone rogi dla wrappera
+  },
+  lastPlaceCard: {
+    borderRadius: 20, // Bardziej zaokrąglone rogi dla karty
+    overflow: "hidden", // Ważne! Obcina zawartość do granic karty
+  },
+  cardInnerWrapper: {
+    flexDirection: "row",
+    padding: 0,
+    backgroundColor: "transparent",
+    borderRadius: 20,
+  },
+  lastPlaceImageContainer: {
+    width: 100,
+    height: 100,
+    margin: 12, // Dodane marginesy dla lepszego wyglądu
+  },
+  lastPlaceImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12, // Bardziej zaokrąglone rogi dla zdjęcia
+    resizeMode: "cover",
+  },
+  lastPlacePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 12, // Bardziej zaokrąglone rogi dla placeholdera
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lastPlacePlaceholderText: {
+    fontSize: 12,
+  },
+  lastPlaceInfo: {
+    flex: 1,
+    justifyContent: "center",
+    paddingRight: 12,
+    paddingVertical: 16,
+  },
+  lastPlaceName: {
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  lastPlaceAddress: {
+    // Usunięto opacity, ponieważ jest teraz obsługiwane przez kolory dynamiczne
+  },
+  emptyPlaceCard: {
+    marginBottom: 24,
+    borderRadius: 20, // Bardziej zaokrąglone rogi, dopasowane do lastPlaceCard
+  },
+  emptyPlaceText: {
+    textAlign: "center",
+    padding: 24,
+  },
+  logoutButton: {
+    marginBottom: 40,
+    backgroundColor: "#f44336", // Czerwony kolor dla przycisku wylogowania
+    borderRadius: 12, // Bardziej zaokrąglone rogi dla przycisku
+  },
+  logoutButtonContent: {
+    paddingVertical: 8,
+  },
+});
 
 export default Profile;

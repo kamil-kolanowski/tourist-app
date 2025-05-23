@@ -1,9 +1,27 @@
 import React, { useState } from "react";
-import { View } from "react-native";
-import { TextInput, Button, Text, Surface } from "react-native-paper";
+import {
+  View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+} from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  Surface,
+  useTheme,
+  Avatar,
+} from "react-native-paper";
 import { useAuth } from "../../contexts/AuthContext";
 import { router } from "expo-router";
-import { db } from "../../SimpleSupabaseClient";
+import { db, auth, storage } from "../../SimpleSupabaseClient";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import { uploadImage } from "../../services/StorageService";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -12,7 +30,51 @@ const Register = () => {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { signUp } = useAuth();
+  const theme = useTheme();
+
+  // Funkcja do wyboru zdjęcia profilowego
+  const pickProfileImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setProfileImage(result.assets[0]);
+      }
+    } catch (error) {
+      console.error("Błąd podczas wybierania zdjęcia:", error);
+      alert("Wystąpił błąd podczas wybierania zdjęcia");
+    }
+  };
+
+  // Funkcja do przesyłania zdjęcia profilowego
+  const handleUploadProfileImage = async (userId) => {
+    if (!profileImage?.uri) return null;
+
+    try {
+      setUploadingImage(true);
+
+      const fileExt = profileImage.uri.split(".").pop();
+      const fileName = `profile_${userId}_${Date.now()}`;
+
+      // Użyj funkcji z StorageService do przesłania zdjęcia
+      const publicUrl = await uploadImage(profileImage.uri, fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("Błąd podczas przesyłania zdjęcia:", error);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleRegister = async () => {
     if (password !== confirmPassword) {
@@ -45,26 +107,41 @@ const Register = () => {
         return;
       }
 
-      // Utworzenie wpisu w tabeli profiles
-      try {
-        // Pobierz ID użytkownika po rejestracji
-        const { data: userData } = await auth.getUser();
-        if (userData?.user?.id) {
-          console.log("Tworzenie profilu dla użytkownika:", userData.user.id);
-          const { error: profileError } = await db.from("profiles").insert([
-            {
-              id: userData.user.id,
-              username: displayName,
-              updated_at: new Date().toISOString(),
-            },
-          ]);
+      // Pobierz ID użytkownika po rejestracji
+      const { data: userData } = await auth.getUser();
 
-          if (profileError) {
-            console.error("Błąd tworzenia profilu:", profileError);
-          }
+      if (userData?.user?.id) {
+        console.log("Tworzenie profilu dla użytkownika:", userData.user.id);
+
+        // Jeśli jest zdjęcie profilowe, prześlij je
+        let avatarUrl = null;
+        if (profileImage) {
+          avatarUrl = await handleUploadProfileImage(userData.user.id);
         }
-      } catch (profileError) {
-        console.error("Error creating user profile:", profileError);
+
+        // Utworzenie wpisu w tabeli profiles
+        const { error: profileError } = await db.from("profiles").insert([
+          {
+            id: userData.user.id,
+            username: displayName,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+
+        // Aktualizacja metadanych użytkownika o avatarUrl
+        if (avatarUrl) {
+          await auth.updateUser({
+            data: {
+              avatar_url: avatarUrl,
+              username: displayName,
+            },
+          });
+        }
+
+        if (profileError) {
+          console.error("Błąd tworzenia profilu:", profileError);
+        }
       }
 
       router.replace("/(tabs)");
@@ -77,72 +154,175 @@ const Register = () => {
   };
 
   return (
-    <Surface style={{ flex: 1 }}>
-      <View style={{ padding: 20, flex: 1, justifyContent: "center" }}>
-        <Text
-          variant="headlineMedium"
-          style={{ textAlign: "center", marginBottom: 20 }}
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <Surface style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         >
-          Rejestracja
-        </Text>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.contentContainer}>
+              {/* Nagłówek Tourist App */}
+              <Text variant="headlineLarge" style={styles.appTitle}>
+                Tourist App
+              </Text>
 
-        <TextInput
-          mode="outlined"
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          style={{ marginBottom: 12 }}
-        />
+              {/* Podtytuł Zarejestruj się */}
+              <Text variant="headlineSmall" style={styles.subtitle}>
+                Rejestracja
+              </Text>
 
-        <TextInput
-          mode="outlined"
-          label="Nazwa użytkownika"
-          value={displayName}
-          onChangeText={setDisplayName}
-          style={{ marginBottom: 12 }}
-        />
+              {/* Zdjęcie profilowe */}
+              <View style={styles.profileImageContainer}>
+                <TouchableOpacity onPress={pickProfileImage}>
+                  {profileImage ? (
+                    <Avatar.Image
+                      size={100}
+                      source={{ uri: profileImage.uri }}
+                      style={styles.profileImage}
+                    />
+                  ) : (
+                    <Avatar.Icon
+                      size={100}
+                      icon="camera"
+                      style={styles.profileImagePlaceholder}
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.profileImageHint}>
+                  Dotknij, aby dodać zdjęcie profilowe
+                </Text>
+              </View>
 
-        <TextInput
-          mode="outlined"
-          label="Hasło"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={{ marginBottom: 12 }}
-        />
+              {/* Etykieta E-mail */}
+              <Text style={styles.inputLabel}>E-mail</Text>
 
-        <TextInput
-          mode="outlined"
-          label="Potwierdź hasło"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={{ marginBottom: 12 }}
-        />
+              <TextInput
+                mode="outlined"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+              />
 
-        {error && (
-          <Text style={{ color: "red", marginBottom: 12, textAlign: "center" }}>
-            {error}
-          </Text>
-        )}
+              {/* Etykieta Nazwa użytkownika */}
+              <Text style={styles.inputLabel}>Nazwa użytkownika</Text>
 
-        <Button
-          mode="contained"
-          onPress={handleRegister}
-          style={{ marginBottom: 12 }}
-          loading={loading}
-          disabled={loading}
-        >
-          Zarejestruj się
-        </Button>
+              <TextInput
+                mode="outlined"
+                value={displayName}
+                onChangeText={setDisplayName}
+                style={styles.input}
+              />
 
-        <Button mode="text" onPress={() => router.push("/auth/login")}>
-          Masz już konto? Zaloguj się
-        </Button>
-      </View>
-    </Surface>
+              {/* Etykieta Hasło */}
+              <Text style={styles.inputLabel}>Hasło</Text>
+
+              <TextInput
+                mode="outlined"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={styles.input}
+              />
+
+              {/* Etykieta Potwierdź hasło */}
+              <Text style={styles.inputLabel}>Potwierdź hasło</Text>
+
+              <TextInput
+                mode="outlined"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                style={styles.input}
+              />
+
+              {error && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {error}
+                </Text>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={handleRegister}
+                style={styles.button}
+                loading={loading || uploadingImage}
+                disabled={loading || uploadingImage}
+              >
+                Zarejestruj się
+              </Button>
+
+              <Button mode="text" onPress={() => router.push("/auth/login")}>
+                Masz już konto? Zaloguj się
+              </Button>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Surface>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  contentContainer: {
+    padding: 20,
+    flex: 1,
+    justifyContent: "center",
+  },
+  appTitle: {
+    fontWeight: "bold",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  subtitle: {
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  profileImageContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  profileImage: {
+    backgroundColor: "transparent",
+  },
+  profileImagePlaceholder: {
+    backgroundColor: "#e1e1e1",
+  },
+  profileImageHint: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+  },
+  inputLabel: {
+    fontSize: 16,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
+  input: {
+    marginBottom: 20,
+  },
+  errorText: {
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  button: {
+    marginBottom: 16,
+    paddingVertical: 6,
+  },
+});
 
 export default Register;
