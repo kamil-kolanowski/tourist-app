@@ -1,5 +1,3 @@
-import { storage } from "../SimpleSupabaseClient";
-import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Przesyłanie zdjęcia z użyciem FormData
@@ -24,6 +22,10 @@ export const uploadImage = async (uri: string, fileName: string) => {
       console.error("Błąd ładowania sesji:", e);
     }
 
+    // Klucz API Supabase (używany gdy brak tokenu)
+    const SUPABASE_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs";
+
     // Utwórz FormData do przesłania pliku
     const formData = new FormData();
     formData.append("file", {
@@ -32,14 +34,16 @@ export const uploadImage = async (uri: string, fileName: string) => {
       type: `image/${fileExt}`,
     } as any);
 
-    // Utwórz nagłówki autoryzacji Z POPRAWIONYM TOKENEM
+    // Utwórz poprawne nagłówki autoryzacji
+    // WAŻNE: Usuwamy Content-Type, żeby FormData samo ustawiło prawidłowy boundary
     const headers: any = {
-      apikey:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
+      apikey: SUPABASE_KEY,
       Authorization: sessionData?.access_token
         ? `Bearer ${sessionData.access_token}`
-        : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
+        : `Bearer ${SUPABASE_KEY}`,
     };
+
+    console.log(`Wysyłam plik do bucketa: ${bucketName}, path: ${filePath}`);
 
     // Użyj bezpośrednio API Supabase Storage
     const response = await fetch(

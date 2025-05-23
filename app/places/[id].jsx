@@ -25,8 +25,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // Pobierz szerokość ekranu do obliczenia wymiarów
 const { width } = Dimensions.get("window");
-const contentWidth = width * 0.95; // 95% szerokości ekranu (było 90%)
-const imageWidth = width * 0.9; // 90% szerokości ekranu (było 80%)
+const contentWidth = width * 0.95; // 95% szerokości ekranu
+const imageWidth = width * 0.9; // 90% szerokości ekranu
 
 const PlaceDetails = () => {
   const { id } = useLocalSearchParams();
@@ -173,11 +173,18 @@ const PlaceDetails = () => {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
+      style={{
+        flex: 1,
+        backgroundColor: paperTheme.colors.background,
+      }}
       edges={["top"]}
     >
       <Surface style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          // Dodajemy ignorowanie contentInsetAdjustmentBehavior
+          contentInsetAdjustmentBehavior="never"
+        >
           {/* Zdjęcie na górze - 90% szerokości */}
           <View style={styles.imageContainer}>
             {place?.image_url && (
@@ -351,14 +358,16 @@ const PlaceDetails = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    alignItems: "center", // Wyśrodkuj zawartość poziomo
-    paddingTop: 0, // Usunięcie górnego paddingu aby zlikwidować belkę
-    paddingBottom: 40, // Dodaj padding na dole
+    alignItems: "center",
+    // Usuń paddingTop aby usunąć pustą przestrzeń pod paskiem nawigacji
+    paddingTop: 0,
+    paddingBottom: 40,
   },
   imageContainer: {
     alignItems: "center",
-    paddingTop: 0, // Zmniejszono z 16 na 0 aby usunąć belkę
     width: "100%",
+    // Dodaj margines na górze zamiast paddingu
+    marginTop: 0,
   },
   coverImage: {
     height: 220,

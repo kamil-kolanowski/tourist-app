@@ -22,10 +22,9 @@ import { db, storage } from "../../SimpleSupabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
 import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { decode } from "base64-arraybuffer";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { uploadImage as uploadImageToStorage } from "../../services/StorageService";
 import { useTheme } from "../../contexts/ThemeContext";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Dodajemy brakujący import
 
 const AddPlace = () => {
   const [name, setName] = useState("");
@@ -66,63 +65,14 @@ const AddPlace = () => {
   };
 
   // Funkcja do przesyłania zdjęcia do Supabase Storage
-
   const uploadImage = async () => {
     if (!image?.uri) return null;
 
     setUploadingImage(true);
     try {
-      const fileExt = image.uri.split(".").pop();
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `place_images/${fileName}`;
-
-      // Utwórz FormData do przesłania pliku
-      const formData = new FormData();
-      formData.append("file", {
-        uri: image.uri,
-        name: fileName,
-        type: `image/${fileExt}`,
-      });
-
-      // Pobierz token sesji z AsyncStorage
-      let sessionData = null;
-      try {
-        const storedSession = await AsyncStorage.getItem("supabase_session");
-        if (storedSession) {
-          sessionData = JSON.parse(storedSession);
-        }
-      } catch (e) {
-        console.error("Błąd ładowania sesji:", e);
-      }
-
-      // Utwórz nagłówki autoryzacji
-      const headers = {
-        apikey:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
-        Authorization: sessionData?.access_token
-          ? `Bearer ${sessionData.access_token}`
-          : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
-      };
-
-      // POPRAWKA: Używamy prawidłowej nazwy bucketa "attraction-images" zamiast "place-images"
-      // Używamy bezpośrednio API Supabase Storage
-      const response = await fetch(
-        `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/attraction-images/${filePath}`,
-        {
-          method: "POST",
-          headers: headers,
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Błąd odpowiedzi Supabase Storage:", errorText);
-        throw new Error(`Błąd przesyłania: ${response.status} ${errorText}`);
-      }
-
-      // POPRAWKA: Używamy prawidłowej nazwy bucketa "attraction-images" w URL publicznym
-      const publicUrl = `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/public/attraction-images/${filePath}`;
+      // Użyj gotowej funkcji z modułu StorageService zamiast implementować ponownie
+      const fileName = `place_${user.id}_${Date.now()}`;
+      const publicUrl = await uploadImageToStorage(image.uri, fileName);
 
       console.log("Przesłano zdjęcie pomyślnie, URL:", publicUrl);
       return publicUrl;
@@ -236,6 +186,7 @@ const AddPlace = () => {
             contentContainerStyle={{ paddingBottom: 30 }}
             showsVerticalScrollIndicator={true}
             bounces={true}
+            keyboardShouldPersistTaps="handled"
           >
             <Card style={{ marginBottom: 16 }}>
               <Card.Content>
@@ -255,6 +206,9 @@ const AddPlace = () => {
                   value={name}
                   onChangeText={setName}
                   style={{ marginBottom: 12 }}
+                  // Wyłącz automatyczne uzupełnianie
+                  autoComplete="off"
+                  textContentType="none"
                 />
 
                 <TextInput
@@ -265,6 +219,9 @@ const AddPlace = () => {
                   multiline
                   numberOfLines={4}
                   style={{ marginBottom: 12 }}
+                  // Wyłącz automatyczne uzupełnianie
+                  autoComplete="off"
+                  textContentType="none"
                 />
 
                 <TextInput
@@ -273,6 +230,9 @@ const AddPlace = () => {
                   value={address}
                   onChangeText={setAddress}
                   style={{ marginBottom: 12 }}
+                  // Wyłącz automatyczne uzupełnianie dla adresu
+                  autoComplete="off"
+                  textContentType="fullStreetAddress"
                 />
 
                 <TextInput
@@ -281,6 +241,9 @@ const AddPlace = () => {
                   value={category}
                   onChangeText={setCategory}
                   style={{ marginBottom: 16 }}
+                  // Wyłącz automatyczne uzupełnianie
+                  autoComplete="off"
+                  textContentType="none"
                 />
 
                 {/* Sekcja zdjęcia */}
