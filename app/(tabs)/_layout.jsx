@@ -129,7 +129,7 @@ const TabsLayout = () => {
           headerShown: false,
           title: "Add Place",
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} icon={icons.saved} />
+            <TabIcon focused={focused} materialIconName="add-circle" />
           ),
         }}
       />

@@ -196,7 +196,7 @@ const SearchScreen = () => {
               data={results}
               renderItem={renderResultItem}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.resultsContainer}
+              // contentContainerStyle={styles.resultsContainer}
               showsVerticalScrollIndicator={true}
               contentInsetAdjustmentBehavior="automatic"
               contentContainerStyle={{

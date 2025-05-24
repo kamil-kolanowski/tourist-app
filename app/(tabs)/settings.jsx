@@ -59,13 +59,13 @@ const Settings = () => {
             />
           </View>
 
-          <Divider />
+          {/* <Divider />
 
           <List.Item
             title="O aplikacji"
             description="Tourist App v1.0.0"
             left={(props) => <List.Icon {...props} icon="information" />}
-          />
+          /> */}
         </List.Section>
       </Surface>
     </SafeAreaView>
