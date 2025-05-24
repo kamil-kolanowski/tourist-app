@@ -18,7 +18,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
 
-  // Określ aktualny motyw na podstawie trybu i ustawień systemu
   const calculateTheme = (mode: ThemeMode): "light" | "dark" => {
     if (mode === "system") {
       return systemColorScheme === "dark" ? "dark" : "light";
@@ -30,7 +29,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     calculateTheme(themeMode)
   );
 
-  // Ładuj ustawienia motywu przy starcie
   useEffect(() => {
     const loadThemePreference = async () => {
       try {
@@ -46,12 +44,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     loadThemePreference();
   }, []);
 
-  // Aktualizuj motyw przy zmianie trybu lub ustawień systemowych
   useEffect(() => {
     setTheme(calculateTheme(themeMode));
   }, [themeMode, systemColorScheme]);
 
-  // Zapisz preferencje motywu
   const saveThemePreference = async (mode: ThemeMode) => {
     try {
       await AsyncStorage.setItem("themeMode", mode);
@@ -60,13 +56,11 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Zmień tryb motywu
   const changeThemeMode = (mode: ThemeMode) => {
     setThemeMode(mode);
     saveThemePreference(mode);
   };
 
-  // Przełącz między trybami jasnym i ciemnym (z pominięciem systemowego)
   const toggleTheme = () => {
     const newMode = theme === "dark" ? "light" : "dark";
     setThemeMode(newMode);

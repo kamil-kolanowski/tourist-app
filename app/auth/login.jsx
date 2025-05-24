@@ -19,7 +19,6 @@ const Login = () => {
   const { signIn, user, isAuthenticated } = useAuth();
   const theme = useTheme();
 
-  // Dodaj efekt, który sprawdza stan autentykacji
   useEffect(() => {
     console.log("Login - stan auth:", { isAuthenticated, userId: user?.id });
     if (isAuthenticated && user) {
@@ -37,7 +36,6 @@ const Login = () => {
     setLoading(true);
     setError("");
 
-    // Wyświetl dane logowania (tylko do debugowania)
     console.log("Próba logowania z danymi:", {
       email,
       passwordLength: password.length,
@@ -76,20 +74,16 @@ const Login = () => {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.contentContainer}>
-              {/* Nagłówek Tourist App */}
               <Text variant="headlineLarge" style={styles.appTitle}>
                 Tourist App
               </Text>
 
-              {/* Podtytuł Zaloguj się */}
               <Text variant="headlineSmall" style={styles.subtitle}>
                 Logowanie
               </Text>
 
-              {/* Etykieta E-mail */}
               <Text style={styles.inputLabel}>E-mail</Text>
 
-              {/* Input do emaila */}
               <TextInput
                 mode="outlined"
                 value={email}
@@ -99,10 +93,8 @@ const Login = () => {
                 style={styles.input}
               />
 
-              {/* Etykieta Hasło */}
               <Text style={styles.inputLabel}>Hasło</Text>
 
-              {/* Input do hasła */}
               <TextInput
                 mode="outlined"
                 value={password}

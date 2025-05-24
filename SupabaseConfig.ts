@@ -18,7 +18,6 @@ const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       "Content-Type": "application/json",
     },
   },
-  // Całkowite wyłączenie realtime
   realtime: {
     enabled: false,
   },

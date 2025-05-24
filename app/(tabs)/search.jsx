@@ -22,7 +22,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { Platform } from "react-native";
 
 const { width } = Dimensions.get("window");
-const cardWidth = width - 32; // Szerokość karty (ekran minus marginesy)
+const cardWidth = width - 32;
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,7 +43,6 @@ const SearchScreen = () => {
 
       if (error) throw error;
 
-      // Filtruj tylko po wyszukiwanej frazie
       const query = searchQuery.toLowerCase().trim();
       const filteredResults = (data || []).filter(
         (place) =>
@@ -66,7 +65,6 @@ const SearchScreen = () => {
     setResults([]);
   };
 
-  // Renderowanie elementu wyniku
   const renderResultItem = ({ item }) => (
     <Card
       key={item.id}
@@ -131,7 +129,7 @@ const SearchScreen = () => {
             theme={{
               colors: {
                 elevation: {
-                  level0: searchBackgroundColor, // tło komponentu
+                  level0: searchBackgroundColor,
                 },
               },
             }}
@@ -196,13 +194,12 @@ const SearchScreen = () => {
               data={results}
               renderItem={renderResultItem}
               keyExtractor={(item) => item.id}
-              // contentContainerStyle={styles.resultsContainer}
               showsVerticalScrollIndicator={true}
               contentInsetAdjustmentBehavior="automatic"
               contentContainerStyle={{
                 paddingBottom: Platform.OS === "ios" ? 120 : 110,
-                paddingHorizontal: 16, // Dodałem marginesy poziome
-                width: "100%", // Upewnij się, że szerokość to 100%
+                paddingHorizontal: 16,
+                width: "100%",
               }}
             />
           )}
@@ -241,11 +238,11 @@ const styles = StyleSheet.create({
   },
   resultCard: {
     marginBottom: 12,
-    width: cardWidth, // Ustaw stałą szerokość karty
-    alignSelf: "center", // Wyśrodkuj kartę
-    borderRadius: 12, // Dodaj zaokrąglone rogi
-    elevation: 2, // Dodaj cień dla Androida
-    shadowColor: "#000000", // Dodaj cień dla iOS
+    width: cardWidth,
+    alignSelf: "center",
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000000",
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
@@ -257,7 +254,7 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: 8,
-    marginBottom: 12, // Dodaj trochę więcej przestrzeni na dole opisu
+    marginBottom: 12,
   },
   noResults: {
     textAlign: "center",

@@ -36,22 +36,18 @@ const HomeScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const params = useLocalSearchParams();
 
-  // Funkcja do filtrowania miejsc
   const onChangeSearch = (query) => {
     setSearchQuery(query);
     filterPlaces(query, selectedCategory);
   };
 
-  // Funkcja do filtrowania na podstawie kategorii i zapytania
   const filterPlaces = (query = searchQuery, category = selectedCategory) => {
     let filtered = [...places];
 
-    // Filtruj po kategorii
     if (category) {
       filtered = filtered.filter((place) => place.category === category);
     }
 
-    // Filtruj po wyszukiwanej frazie
     if (query.trim() !== "") {
       const searchLower = query.toLowerCase().trim();
       filtered = filtered.filter(
@@ -76,13 +72,11 @@ const HomeScreen = () => {
     }
   };
 
-  // Dodaj efekt, który będzie nasłuchiwał na zmiany parametrów
   useEffect(() => {
     console.log("Parametry zmieniły się:", params);
     fetchPlaces();
   }, [params.refresh]);
 
-  // Zawsze wywołaj fetchPlaces przy montowaniu komponentu
   useEffect(() => {
     fetchPlaces();
   }, []);
@@ -103,7 +97,6 @@ const HomeScreen = () => {
       setPlaces(data || []);
       setFilteredPlaces(data || []);
 
-      // Wyodrębnij wszystkie unikalne kategorie
       if (data && data.length > 0) {
         const uniqueCategories = [
           ...new Set(data.map((place) => place.category)),
@@ -123,11 +116,10 @@ const HomeScreen = () => {
     fetchPlaces();
   };
 
-  // Renderowanie elementu miejsca w układzie siatki
   const renderPlaceItem = ({ item }) => (
     <View
       style={{
-        width: "48%", // zamiast flex: 1
+        width: "48%",
         margin: 4,
         borderRadius: 12,
         overflow: "hidden",
@@ -143,7 +135,6 @@ const HomeScreen = () => {
         rippleColor="rgba(0, 0, 0, 0.1)"
       >
         <View>
-          {/* Zdjęcie miejsca */}
           {item.image_url ? (
             <Image
               source={{ uri: item.image_url }}
@@ -175,7 +166,6 @@ const HomeScreen = () => {
             </View>
           )}
 
-          {/* Nazwa miejsca - wyśrodkowana pod zdjęciem */}
           <View style={{ padding: 10, alignItems: "center" }}>
             <Text
               style={{
@@ -202,7 +192,6 @@ const HomeScreen = () => {
       <Surface
         style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
       >
-        {/* Nagłówek i wyszukiwarka */}
         <View style={{ paddingBottom: 0 }}>
           <Text
             variant="headlineMedium"
@@ -232,7 +221,6 @@ const HomeScreen = () => {
           />
         </View>
 
-        {/* Kategorie jako przewijany poziomy pasek */}
         <View style={{ marginBottom: 8, height: 40 }}>
           <ScrollView
             horizontal
@@ -266,7 +254,6 @@ const HomeScreen = () => {
           </ScrollView>
         </View>
 
-        {/* Wyniki wyszukiwania */}
         <View style={{ flex: 1, paddingHorizontal: 12 }}>
           {loading && !refreshing ? (
             <Text style={{ padding: 16, color: paperTheme.colors.onSurface }}>

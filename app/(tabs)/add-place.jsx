@@ -24,7 +24,7 @@ import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { uploadImage as uploadImageToStorage } from "../../services/StorageService";
 import { useTheme } from "../../contexts/ThemeContext";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Dodajemy brakujący import
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AddPlace = () => {
   const [name, setName] = useState("");
@@ -44,7 +44,6 @@ const AddPlace = () => {
     userId: user?.id,
   });
 
-  // Funkcja do wyboru zdjęcia z galerii
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -52,7 +51,6 @@ const AddPlace = () => {
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
-        // Usunięto base64: true - nie jest już potrzebne
       });
 
       if (!result.canceled) {
@@ -64,13 +62,11 @@ const AddPlace = () => {
     }
   };
 
-  // Funkcja do przesyłania zdjęcia do Supabase Storage
   const uploadImage = async () => {
     if (!image?.uri) return null;
 
     setUploadingImage(true);
     try {
-      // Użyj gotowej funkcji z modułu StorageService zamiast implementować ponownie
       const fileName = `place_${user.id}_${Date.now()}`;
       const publicUrl = await uploadImageToStorage(image.uri, fileName);
 
@@ -85,7 +81,6 @@ const AddPlace = () => {
     }
   };
 
-  // Dodaj warunek dla niezalogowanego użytkownika
   if (!isAuthenticated || !user) {
     console.log("Przekierowanie do logowania z add-place");
     const timer = setTimeout(() => {
@@ -116,7 +111,6 @@ const AddPlace = () => {
 
     setLoading(true);
     try {
-      // Najpierw prześlij zdjęcie jeśli zostało wybrane
       const imageUrl = image ? await uploadImage() : null;
 
       const placeData = {
@@ -128,7 +122,7 @@ const AddPlace = () => {
         created_by: user.id,
         rating: 0,
         ratings_count: 0,
-        image_url: imageUrl, // Dodaj URL zdjęcia
+        image_url: imageUrl,
       };
 
       console.log("Dodaję miejsce:", placeData);
@@ -142,7 +136,6 @@ const AddPlace = () => {
 
       console.log("Dodano miejsce:", data);
 
-      // Wyczyść formularz
       setName("");
       setDescription("");
       setAddress("");
@@ -206,7 +199,6 @@ const AddPlace = () => {
                   value={name}
                   onChangeText={setName}
                   style={{ marginBottom: 12 }}
-                  // Wyłącz automatyczne uzupełnianie
                   autoComplete="off"
                   textContentType="none"
                 />
@@ -219,7 +211,6 @@ const AddPlace = () => {
                   multiline
                   numberOfLines={4}
                   style={{ marginBottom: 12 }}
-                  // Wyłącz automatyczne uzupełnianie
                   autoComplete="off"
                   textContentType="none"
                 />
@@ -230,7 +221,6 @@ const AddPlace = () => {
                   value={address}
                   onChangeText={setAddress}
                   style={{ marginBottom: 12 }}
-                  // Wyłącz automatyczne uzupełnianie dla adresu
                   autoComplete="off"
                   textContentType="fullStreetAddress"
                 />
@@ -241,12 +231,10 @@ const AddPlace = () => {
                   value={category}
                   onChangeText={setCategory}
                   style={{ marginBottom: 16 }}
-                  // Wyłącz automatyczne uzupełnianie
                   autoComplete="off"
                   textContentType="none"
                 />
 
-                {/* Sekcja zdjęcia */}
                 <Text
                   variant="titleMedium"
                   style={{

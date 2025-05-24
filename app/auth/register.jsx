@@ -35,7 +35,6 @@ const Register = () => {
   const { signUp } = useAuth();
   const theme = useTheme();
 
-  // Funkcja do wyboru zdjęcia profilowego
   const pickProfileImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -54,7 +53,6 @@ const Register = () => {
     }
   };
 
-  // Funkcja do przesyłania zdjęcia profilowego
   const handleUploadProfileImage = async (userId) => {
     if (!profileImage?.uri) return null;
 
@@ -64,7 +62,6 @@ const Register = () => {
       const fileExt = profileImage.uri.split(".").pop();
       const fileName = `profile_${userId}_${Date.now()}`;
 
-      // Użyj funkcji z StorageService do przesłania zdjęcia
       const publicUrl = await uploadImage(profileImage.uri, fileName);
 
       return publicUrl;
@@ -96,7 +93,6 @@ const Register = () => {
     setError("");
 
     try {
-      // Przekazujemy displayName jako username w user_metadata
       const { error: signUpError } = await signUp(email, password, {
         username: displayName,
       });
@@ -107,19 +103,16 @@ const Register = () => {
         return;
       }
 
-      // Pobierz ID użytkownika po rejestracji
       const { data: userData } = await auth.getUser();
 
       if (userData?.user?.id) {
         console.log("Tworzenie profilu dla użytkownika:", userData.user.id);
 
-        // Jeśli jest zdjęcie profilowe, prześlij je
         let avatarUrl = null;
         if (profileImage) {
           avatarUrl = await handleUploadProfileImage(userData.user.id);
         }
 
-        // Utworzenie wpisu w tabeli profiles
         const { error: profileError } = await db.from("profiles").insert([
           {
             id: userData.user.id,
@@ -129,7 +122,6 @@ const Register = () => {
           },
         ]);
 
-        // Aktualizacja metadanych użytkownika o avatarUrl
         if (avatarUrl) {
           await auth.updateUser({
             data: {
@@ -167,17 +159,14 @@ const Register = () => {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.contentContainer}>
-              {/* Nagłówek Tourist App */}
               <Text variant="headlineLarge" style={styles.appTitle}>
                 Tourist App
               </Text>
 
-              {/* Podtytuł Zarejestruj się */}
               <Text variant="headlineSmall" style={styles.subtitle}>
                 Rejestracja
               </Text>
 
-              {/* Zdjęcie profilowe */}
               <View style={styles.profileImageContainer}>
                 <TouchableOpacity onPress={pickProfileImage}>
                   {profileImage ? (
@@ -199,7 +188,6 @@ const Register = () => {
                 </Text>
               </View>
 
-              {/* Etykieta E-mail */}
               <Text style={styles.inputLabel}>E-mail</Text>
 
               <TextInput
@@ -211,7 +199,6 @@ const Register = () => {
                 style={styles.input}
               />
 
-              {/* Etykieta Nazwa użytkownika */}
               <Text style={styles.inputLabel}>Nazwa użytkownika</Text>
 
               <TextInput
@@ -221,7 +208,6 @@ const Register = () => {
                 style={styles.input}
               />
 
-              {/* Etykieta Hasło */}
               <Text style={styles.inputLabel}>Hasło</Text>
 
               <TextInput
@@ -232,7 +218,6 @@ const Register = () => {
                 style={styles.input}
               />
 
-              {/* Etykieta Potwierdź hasło */}
               <Text style={styles.inputLabel}>Potwierdź hasło</Text>
 
               <TextInput

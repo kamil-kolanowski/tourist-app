@@ -24,15 +24,14 @@ const Profile = () => {
   const paperTheme = usePaperTheme();
   const { isDarkTheme } = useTheme();
 
-  // Funkcja pomocnicza do określania kolorów na podstawie bieżącego motywu
   const getThemeColors = () => {
     return {
-      cardBackgroundColor: isDarkTheme ? "#333333" : "#E0E0E0", // Ciemniejszy w trybie ciemnym
+      cardBackgroundColor: isDarkTheme ? "#333333" : "#E0E0E0",
       placeholderBackgroundColor: isDarkTheme ? "#555555" : "#BDBDBD",
       placeholderTextColor: isDarkTheme ? "#AAAAAA" : "#757575",
       textColor: isDarkTheme ? "#FFFFFF" : "#000000",
       secondaryTextColor: isDarkTheme ? "#CCCCCC" : "rgba(0, 0, 0, 0.7)",
-      logoutButtonColor: "#f44336", // Czerwony dla obu trybów
+      logoutButtonColor: "#f44336",
     };
   };
 
@@ -44,12 +43,10 @@ const Profile = () => {
     userId: user?.id,
   });
 
-  // Funkcja do pobierania profilu użytkownika
   const fetchUserProfile = async () => {
     try {
       if (!user?.id) return;
 
-      // Zmiana kolejności wywołań - najpierw eq, potem select
       const { data, error } = await db
         .from("profiles")
         .eq("id", user.id)
@@ -65,12 +62,10 @@ const Profile = () => {
     }
   };
 
-  // Funkcja do pobierania liczby opinii użytkownika
   const fetchUserReviewsCount = async () => {
     try {
       if (!user?.id) return;
 
-      // Zmiana kolejności wywołań - najpierw eq, potem select
       const { data, error } = await db
         .from("reviews")
         .eq("user_id", user.id)
@@ -86,12 +81,10 @@ const Profile = () => {
     }
   };
 
-  // Funkcja do pobierania ostatnio odwiedzonego miejsca
   const fetchLastVisitedPlace = async () => {
     try {
       if (!user?.id) return;
 
-      // Użyj bezpośredniego zapytania REST API zamiast metody order
       const headers = {
         apikey:
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
@@ -101,7 +94,6 @@ const Profile = () => {
           : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
       };
 
-      // Pobierz wszystkie opinie użytkownika
       const { data: reviewsData, error: reviewError } = await db
         .from("reviews")
         .eq("user_id", user.id)
@@ -110,16 +102,13 @@ const Profile = () => {
       if (reviewError) throw reviewError;
 
       if (reviewsData && reviewsData.length > 0) {
-        // Ręczne sortowanie po stronie klienta
         const sortedReviews = [...reviewsData].sort(
           (a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
 
-        // Weź najnowszą opinię
         const lastReview = sortedReviews[0];
 
-        // Pobierz dane miejsca na podstawie ostatniej opinii
         const { data: placeData, error: placeError } = await db
           .from("places")
           .eq("id", lastReview.place_id)
@@ -136,8 +125,6 @@ const Profile = () => {
       console.error("Błąd pobierania ostatnio odwiedzonego miejsca:", error);
     }
   };
-
-  // Załaduj wszystkie potrzebne dane po załadowaniu komponentu
   useEffect(() => {
     if (user?.id) {
       console.log("Pobieranie danych dla użytkownika:", user.id);
@@ -156,7 +143,6 @@ const Profile = () => {
     }
   }, [user?.id]);
 
-  // Funkcja do wylogowania
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -166,7 +152,6 @@ const Profile = () => {
     }
   };
 
-  // Warunek dla niezalogowanego użytkownika
   if (!isAuthenticated || !user) {
     console.log("Przekierowanie do logowania z profilu");
     const timer = setTimeout(() => {
@@ -204,15 +189,12 @@ const Profile = () => {
         style={{ flex: 1, backgroundColor: paperTheme.colors.background }}
       >
         <ScrollView style={styles.container}>
-          {/* Nagłówek */}
           <Text variant="headlineMedium" style={styles.header}>
             Twój profil
           </Text>
 
-          {/* Sekcja danych użytkownika */}
           <Card style={styles.profileCard}>
             <Card.Content style={styles.profileContent}>
-              {/* Zdjęcie profilowe po lewej */}
               <View style={styles.avatarContainer}>
                 <Avatar.Image
                   size={80}
@@ -225,7 +207,6 @@ const Profile = () => {
                 />
               </View>
 
-              {/* Dane użytkownika po prawej */}
               <View style={styles.userInfoContainer}>
                 <Text variant="titleLarge" style={styles.username}>
                   {userProfile?.username ||
@@ -242,7 +223,6 @@ const Profile = () => {
             </Card.Content>
           </Card>
 
-          {/* Sekcja ostatnio odwiedzonego miejsca */}
           <Text
             variant="titleLarge"
             style={[styles.sectionTitle, { color: colors.textColor }]}
@@ -251,7 +231,6 @@ const Profile = () => {
           </Text>
 
           {lastVisitedPlace ? (
-            // Zawijanie w View aby rozwiązać problem z overflow: hidden i cieniami
             <View style={styles.cardWrapper}>
               <Card
                 style={[
@@ -261,7 +240,6 @@ const Profile = () => {
                 onPress={() => router.push(`/places/${lastVisitedPlace.id}`)}
               >
                 <View style={styles.cardInnerWrapper}>
-                  {/* Zdjęcie po lewej stronie */}
                   <View style={styles.lastPlaceImageContainer}>
                     {lastVisitedPlace.image_url ? (
                       <Image
@@ -289,7 +267,6 @@ const Profile = () => {
                     )}
                   </View>
 
-                  {/* Treść po prawej stronie */}
                   <View style={styles.lastPlaceInfo}>
                     <Text
                       variant="titleMedium"
@@ -334,7 +311,6 @@ const Profile = () => {
             </Card>
           )}
 
-          {/* Przycisk wylogowania */}
           <Button
             mode="contained"
             onPress={handleSignOut}
@@ -361,7 +337,7 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     marginBottom: 24,
-    borderRadius: 16, // Zwiększone zaokrąglenie rogów
+    borderRadius: 16,
   },
   profileContent: {
     flexDirection: "row",
@@ -389,14 +365,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
-  // Zmiany dla kafelka ostatnio odwiedzonego miejsca
   cardWrapper: {
     marginBottom: 24,
-    borderRadius: 20, // Zaokrąglone rogi dla wrappera
+    borderRadius: 20,
   },
   lastPlaceCard: {
-    borderRadius: 20, // Bardziej zaokrąglone rogi dla karty
-    overflow: "hidden", // Ważne! Obcina zawartość do granic karty
+    borderRadius: 20,
+    overflow: "hidden",
   },
   cardInnerWrapper: {
     flexDirection: "row",
@@ -407,18 +382,18 @@ const styles = StyleSheet.create({
   lastPlaceImageContainer: {
     width: 100,
     height: 100,
-    margin: 12, // Dodane marginesy dla lepszego wyglądu
+    margin: 12,
   },
   lastPlaceImage: {
     width: 100,
     height: 100,
-    borderRadius: 12, // Bardziej zaokrąglone rogi dla zdjęcia
+    borderRadius: 12,
     resizeMode: "cover",
   },
   lastPlacePlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 12, // Bardziej zaokrąglone rogi dla placeholdera
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -435,12 +410,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
   },
-  lastPlaceAddress: {
-    // Usunięto opacity, ponieważ jest teraz obsługiwane przez kolory dynamiczne
-  },
+  lastPlaceAddress: {},
   emptyPlaceCard: {
     marginBottom: 24,
-    borderRadius: 20, // Bardziej zaokrąglone rogi, dopasowane do lastPlaceCard
+    borderRadius: 20,
   },
   emptyPlaceText: {
     textAlign: "center",
@@ -448,8 +421,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginBottom: 40,
-    backgroundColor: "#f44336", // Czerwony kolor dla przycisku wylogowania
-    borderRadius: 12, // Bardziej zaokrąglone rogi dla przycisku
+    backgroundColor: "#f44336",
+    borderRadius: 12,
   },
   logoutButtonContent: {
     paddingVertical: 8,

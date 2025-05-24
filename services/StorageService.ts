@@ -6,7 +6,6 @@ export const uploadImage = async (uri: string, fileName: string) => {
     const fileExt = uri.split(".").pop();
     const filePath = `${fileName}.${fileExt}`;
 
-    // Określ odpowiedni bucket w zależności od typu obrazu
     const bucketName = fileName.startsWith("profile_")
       ? "profile-images" // Bucket na zdjęcia profilowe
       : "attraction-images"; // Bucket na zdjęcia atrakcji
@@ -22,7 +21,7 @@ export const uploadImage = async (uri: string, fileName: string) => {
       console.error("Błąd ładowania sesji:", e);
     }
 
-    // Klucz API Supabase (używany gdy brak tokenu)
+    // Klucz API Supabase
     const SUPABASE_KEY =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs";
 
@@ -35,7 +34,6 @@ export const uploadImage = async (uri: string, fileName: string) => {
     } as any);
 
     // Utwórz poprawne nagłówki autoryzacji
-    // WAŻNE: Usuwamy Content-Type, żeby FormData samo ustawiło prawidłowy boundary
     const headers: any = {
       apikey: SUPABASE_KEY,
       Authorization: sessionData?.access_token

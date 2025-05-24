@@ -1,4 +1,4 @@
-import "../polyfills"; // To musi być pierwszy import
+import "../polyfills";
 import { Stack } from "expo-router";
 import { PaperProvider, MD3DarkTheme, MD3LightTheme } from "react-native-paper";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -10,11 +10,9 @@ export const unstable_settings = {
   initialRouteName: "index",
 };
 
-// Komponent aplikacji z obsługą motywu
 const AppWithTheme = () => {
   const { theme, isDarkTheme } = useTheme();
 
-  // Wybierz odpowiedni motyw na podstawie ustawień
   const paperTheme = isDarkTheme ? MD3DarkTheme : MD3LightTheme;
 
   return (
@@ -30,7 +28,6 @@ const AppWithTheme = () => {
             backgroundColor: isDarkTheme ? "#121212" : "white",
           },
           headerTintColor: isDarkTheme ? "white" : "black",
-          // Dodajemy odpowiednie marginesy dla iOS
           headerLayoutPreset: "center",
           safeAreaInsets: { top: 10 },
         }}

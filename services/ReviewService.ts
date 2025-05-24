@@ -30,7 +30,7 @@ export const fetchReviewsWithUserData = async (
     if (error) throw error;
     if (!reviews || reviews.length === 0) return [];
 
-    // Posortuj recenzje ręcznie po stronie klienta - najnowsze na górze
+    // Posortuj recenzje po stronie klienta - najnowsze na górze
     const sortedReviews = [...reviews].sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -40,13 +40,11 @@ export const fetchReviewsWithUserData = async (
     const enhancedReviews = await Promise.all(
       sortedReviews.map(async (review: Review) => {
         try {
-          // Poprawiona kolejność wywołań dla SimpleSupabaseClient
           const { data: profileData, error: profileError } = await db
             .from("profiles")
             .eq("id", review.user_id)
             .select("*");
 
-          // Sprawdź, czy mamy wynik
           if (profileData && profileData.length > 0 && !profileError) {
             const profile = profileData[0];
             console.log(`Profil użytkownika dla recenzji ${review.id}:`, {
@@ -107,7 +105,7 @@ export const addReviewAndUpdateRating = async (
   review: string
 ): Promise<Review> => {
   try {
-    // 1. Dodaj nową opinię
+    // Dodaj nową opinię
     const reviewData = {
       place_id: placeId,
       user_id: userId,
@@ -122,7 +120,7 @@ export const addReviewAndUpdateRating = async (
 
     if (reviewError) throw reviewError;
 
-    // 2. Pobierz wszystkie opinie dla tego miejsca
+    // Pobierz wszystkie opinie dla tego miejsca
     const { data: reviews, error: fetchError } = await db
       .from("reviews")
       .eq("place_id", placeId)
@@ -130,12 +128,15 @@ export const addReviewAndUpdateRating = async (
 
     if (fetchError) throw fetchError;
 
-    // 3. Oblicz nową średnią ocenę
+    // Oblicz nową średnią ocenę
     const ratingsCount = reviews.length;
-    const totalRating = reviews.reduce((sum, rev) => sum + rev.rating, 0);
+    const totalRating = reviews.reduce(
+      (sum: any, rev: any) => sum + rev.rating,
+      0
+    );
     const averageRating = Math.round((totalRating / ratingsCount) * 10) / 10;
 
-    // 4. Zaktualizuj dane miejsca - UŻYJ BEZPOŚREDNIO API ZAMIAST METODY UPDATE
+    // Zaktualizuj dane miejsca - UŻYJ BEZPOŚREDNIO API ZAMIAST METODY UPDATE
     try {
       const headers = await getAuthHeaders(); // Zdefiniuj tę funkcję lub użyj istniejącej z SimpleSupabaseClient
       const updateResponse = await fetch(
@@ -163,7 +164,7 @@ export const addReviewAndUpdateRating = async (
       throw updateError;
     }
 
-    // 5. Zwróć nowo dodaną opinię wraz z danymi użytkownika
+    // Zwróć nowo dodaną opinię wraz z danymi użytkownika
     const addedReview =
       insertedReview && insertedReview.length > 0
         ? insertedReview[0]

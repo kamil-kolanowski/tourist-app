@@ -14,7 +14,7 @@ import {
   Card,
   useTheme,
   IconButton,
-  Divider, // Dodany import komponentu Divider
+  Divider,
 } from "react-native-paper";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -31,7 +31,6 @@ const AddReview = () => {
   const { user } = useAuth();
   const theme = useTheme();
 
-  // Pobierz dane miejsca jeśli nie zostały przekazane jako parametry
   useEffect(() => {
     const fetchPlaceInfo = async () => {
       if (!placeName || !placeAddress) {
@@ -58,10 +57,8 @@ const AddReview = () => {
 
     setLoading(true);
     try {
-      // Użyj nowej funkcji do dodania recenzji i aktualizacji ocen
       await addReviewAndUpdateRating(id, user.id, rating, review);
 
-      // Sukces - wróć do szczegółów miejsca z parametrem do odświeżenia
       router.replace({
         pathname: `/places/${id}`,
         params: { refresh: Date.now() },
@@ -74,7 +71,6 @@ const AddReview = () => {
     }
   };
 
-  // Renderowanie gwiazdek do wyboru oceny
   const renderStars = () => {
     return (
       <View style={styles.starsContainer}>
@@ -109,7 +105,6 @@ const AddReview = () => {
           >
             <Card style={styles.card}>
               <Card.Content>
-                {/* Nazwa miejsca i adres na górze */}
                 <Text variant="headlineSmall" style={styles.placeName}>
                   {displayName}
                 </Text>
@@ -121,13 +116,11 @@ const AddReview = () => {
 
                 <Divider style={styles.divider} />
 
-                {/* Ocena - klikanie gwiazdek */}
                 <Text variant="titleMedium" style={styles.ratingLabel}>
                   Twoja ocena:
                 </Text>
                 {renderStars()}
 
-                {/* Pole na komentarz */}
                 <TextInput
                   mode="outlined"
                   multiline
@@ -138,7 +131,6 @@ const AddReview = () => {
                   style={styles.input}
                 />
 
-                {/* Przycisk dodania opinii */}
                 <Button
                   mode="contained"
                   onPress={handleSubmit}

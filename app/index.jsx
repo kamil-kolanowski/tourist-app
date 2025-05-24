@@ -18,11 +18,9 @@ const Welcome = () => {
   const { isDarkTheme } = useTheme();
 
   useEffect(() => {
-    // Sprawdź, czy użytkownik jest zalogowany
     const checkUser = async () => {
       const { data } = await auth.getSession();
       if (data.session) {
-        // Użytkownik jest zalogowany, przekieruj do głównej zakładki
         router.replace("/(tabs)");
       }
     };
@@ -43,7 +41,6 @@ const Welcome = () => {
     >
       <StatusBar style={isDarkTheme ? "light" : "dark"} />
 
-      {/* Używamy Card jako głównego kontenera dla lepszej zgodności z Material Design */}
       <Card
         style={[
           styles.contentCard,
@@ -52,7 +49,6 @@ const Welcome = () => {
         mode="elevated"
         elevation={0}
       >
-        {/* Zdjęcie palm jako Card.Cover */}
         <Card.Cover
           source={require("../assets/images/splash-palms.jpg")}
           style={styles.imageCardCover}
@@ -60,7 +56,6 @@ const Welcome = () => {
         />
 
         <Card.Content style={styles.cardContent}>
-          {/* Nagłówek */}
           <Text
             variant="headlineLarge"
             style={[styles.title, { color: paperTheme.colors.onBackground }]}
@@ -68,7 +63,6 @@ const Welcome = () => {
             Znajdź atrakcje
           </Text>
 
-          {/* Podtytuł */}
           <Text
             variant="bodyLarge"
             style={[
@@ -79,7 +73,6 @@ const Welcome = () => {
             Odkrywaj nowe miejsca
           </Text>
 
-          {/* Przycisk */}
           <Button
             mode="contained"
             onPress={handleStart}
@@ -106,7 +99,7 @@ const styles = StyleSheet.create({
   contentCard: {
     width: width * 0.9,
     maxHeight: height * 0.8,
-    borderRadius: 28, // Material Design 3 rounded corners (large)
+    borderRadius: 28,
     overflow: "hidden",
   },
   imageCardCover: {
@@ -131,11 +124,11 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
-    borderRadius: 28, // Material Design 3 button corners
+    borderRadius: 28,
     paddingVertical: 4,
   },
   buttonContent: {
-    height: 48, // Standard Material Design button height
+    height: 48,
     paddingHorizontal: 24,
   },
   buttonLabel: {

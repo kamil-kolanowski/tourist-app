@@ -5,7 +5,6 @@ const SUPABASE_URL = "https://lxduypbtgbwmkcrqvduv.supabase.co";
 const SUPABASE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs";
 
-// Typy dla TypeScript
 type User = {
   id: string;
   email: string;
@@ -20,7 +19,6 @@ type Session = {
   user: User;
 };
 
-// Globalne zmienne dla sesji i użytkownika
 let currentSession: Session | null = null;
 let currentUser: User | null = null;
 
@@ -153,7 +151,6 @@ export const auth = {
         body: JSON.stringify({
           email,
           password,
-          // Dodaj metadane oraz wyłącz wymaganie potwierdzenia emaila
           data: {
             email_confirm: true,
             username: meta?.username || email.split("@")[0],
@@ -173,7 +170,6 @@ export const auth = {
         };
       }
 
-      // Po udanej rejestracji, od razu zaloguj użytkownika
       console.log("Pomyślna rejestracja, próba logowania");
       const loginResponse = await fetch(
         `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
@@ -213,7 +209,6 @@ export const auth = {
     try {
       console.log("Rozpoczynam logowanie dla:", email);
 
-      // Sprawdź połączenie sieciowe przed wysłaniem żądania
       try {
         const networkTest = await fetch("https://www.google.com", {
           method: "HEAD",
@@ -275,14 +270,12 @@ export const auth = {
   // Wylogowanie
   signOut: async () => {
     try {
-      // Wykonaj zapytanie do wylogowania
       const headers = await getAuthHeaders();
       await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
         method: "POST",
         headers,
       });
 
-      // Wyczyść lokalną sesję
       await saveSession(null);
       return { error: null };
     } catch (error: any) {
@@ -342,7 +335,6 @@ export const auth = {
         };
       }
 
-      // Odśwież dane użytkownika
       const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         headers,
       });
@@ -377,7 +369,6 @@ export const auth = {
   onAuthStateChange: (
     callback: (event: string, session: Session | null) => void
   ) => {
-    // Sprawdź stan na początku
     loadSession().then((session) => {
       if (session) {
         callback("SIGNED_IN", session);
@@ -386,7 +377,6 @@ export const auth = {
       }
     });
 
-    // Brak prawdziwego nasłuchiwania w prostej implementacji
     return {
       data: {
         subscription: {
@@ -397,7 +387,7 @@ export const auth = {
   },
 };
 
-// Implementacja klienta bazy danych
+// Klient bazy danych
 export const db = {
   from: (table: string) => ({
     select: async (columns = "*") => {
@@ -490,13 +480,10 @@ export const db = {
           return {
             data,
             error: null,
-            // Dodajemy metodę single do obiektu zwracanego przez select
             single: () => {
               return { data: data[0] || null, error: null };
             },
-            order: (column: string, { ascending = true } = {}) => {
-              // Implementacja order pozostaje bez zmian
-            },
+            order: (column: string, { ascending = true } = {}) => {},
           };
         } catch (error) {
           console.error(`Select with eq error for ${table}:`, error);
@@ -513,17 +500,13 @@ export const storage = {
     upload: async (path: string, data: any, options = {}) => {
       try {
         const headers = await getAuthHeaders();
-        // Usuwamy Content-Type, ponieważ FormData ustawia własny boundary
         const reqHeaders = { ...headers };
         delete reqHeaders["Content-Type"];
 
         const formData = new FormData();
-        // W React Native musimy użyć specjalnego formatu dla plików
         if (data.type && data.uri) {
-          // Dla obiektów File z expo-file-system
           formData.append("file", data);
         } else {
-          // Dla ArrayBuffer lub innych typów danych
           const blob = new Blob([data], {
             type: options.contentType || "application/octet-stream",
           });
@@ -587,7 +570,6 @@ export const storage = {
   }),
 };
 
-// Eksportuj klienta
 export const supabase = {
   auth,
   db,

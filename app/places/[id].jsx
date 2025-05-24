@@ -23,10 +23,9 @@ import { useFocusEffect } from "@react-navigation/native";
 import { fetchReviewsWithUserData } from "../../services/ReviewService";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Pobierz szerokość ekranu do obliczenia wymiarów
 const { width } = Dimensions.get("window");
-const contentWidth = width * 0.95; // 95% szerokości ekranu
-const imageWidth = width * 0.9; // 90% szerokości ekranu
+const contentWidth = width * 0.95;
+const imageWidth = width * 0.9;
 
 const PlaceDetails = () => {
   const { id } = useLocalSearchParams();
@@ -36,18 +35,15 @@ const PlaceDetails = () => {
   const [refreshing, setRefreshing] = useState(false);
   const paperTheme = usePaperTheme();
 
-  // Dodajemy nowe stany dla ocen
   const [averageRating, setAverageRating] = useState(0);
   const [ratingsCount, setRatingsCount] = useState(0);
 
-  // Efekt do aktualizacji tytułu nagłówka
   useEffect(() => {
     if (place) {
       router.setParams({ title: place.category });
     }
   }, [place]);
 
-  // Funkcja do pobierania danych miejsca i opinii
   const loadData = useCallback(async () => {
     if (!id) return;
 
@@ -56,7 +52,6 @@ const PlaceDetails = () => {
 
       console.log("Rozpoczynam ładowanie danych dla miejsca:", id);
 
-      // Pobierz dane miejsca
       const { data: placeData, error: placeError } = await db
         .from("places")
         .eq("id", id)
@@ -70,13 +65,11 @@ const PlaceDetails = () => {
       console.log("Dane miejsca pobrane pomyślnie:", placeData?.name);
       setPlace(placeData);
 
-      // Ustaw dane o ocenach
       if (placeData) {
         setAverageRating(placeData.rating || 0);
         setRatingsCount(placeData.ratings_count || 0);
       }
 
-      // Pobierz wszystkie opinie
       console.log("Pobieranie opinii dla miejsca:", id);
       try {
         const reviewsData = await fetchReviewsWithUserData(id);
@@ -94,14 +87,12 @@ const PlaceDetails = () => {
     }
   }, [id]);
 
-  // Użyj useFocusEffect zamiast useEffect, aby odświeżyć dane po powrocie na ekran
   useFocusEffect(
     useCallback(() => {
       loadData();
     }, [loadData])
   );
 
-  // Renderowanie gwiazdek na podstawie faktycznej obliczonej oceny
   const renderRatingStars = (rating) => {
     const stars = [];
     const roundedRating = Math.round(rating);
@@ -125,19 +116,15 @@ const PlaceDetails = () => {
     );
   };
 
-  // Funkcja do nawigacji w Google Maps
   const openGoogleMaps = () => {
     if (!place?.address) return;
 
-    // Przygotuj adres do nawigacji
     const address = encodeURIComponent(place.address);
 
-    // Różne URI scheme w zależności od platformy
     const mapsUrl = Platform.select({
       default: `https://www.google.com/maps/search/?api=1&query=${address}`,
     });
 
-    // Sprawdź czy możemy otworzyć URL
     Linking.canOpenURL(mapsUrl)
       .then((supported) => {
         if (supported) {
@@ -182,7 +169,6 @@ const PlaceDetails = () => {
       <Surface style={{ flex: 1 }}>
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
-          // Dodajemy ignorowanie contentInsetAdjustmentBehavior
           contentInsetAdjustmentBehavior="never"
         >
           {/* Zdjęcie na górze - 90% szerokości */}
@@ -196,9 +182,7 @@ const PlaceDetails = () => {
           </View>
 
           <View style={[styles.container, { width: contentWidth }]}>
-            {/* Górna sekcja - nazwa, adres, oceny */}
             <View style={styles.headerSection}>
-              {/* Lewa strona - nazwa i adres */}
               <View style={styles.leftHeader}>
                 <Text variant="titleLarge" style={styles.placeName}>
                   {place?.name}
@@ -215,7 +199,6 @@ const PlaceDetails = () => {
                 </View>
               </View>
 
-              {/* Prawa strona - oceny */}
               <View style={styles.rightHeader}>
                 <View style={styles.ratingsContainer}>
                   {renderRatingStars(averageRating)}
@@ -233,13 +216,11 @@ const PlaceDetails = () => {
               </View>
             </View>
 
-            {/* Opis miejsca */}
             <Divider style={styles.divider} />
             <Text variant="bodyLarge" style={styles.description}>
               {place?.description}
             </Text>
 
-            {/* Przyciski akcji */}
             <View style={styles.buttonsContainer}>
               <Button
                 mode="contained"
@@ -268,7 +249,6 @@ const PlaceDetails = () => {
               </Button>
             </View>
 
-            {/* Sekcja opinii */}
             <Divider style={styles.divider} />
             <View style={styles.reviewsHeaderContainer}>
               <Text variant="titleLarge" style={styles.reviewsHeader}>
@@ -282,7 +262,6 @@ const PlaceDetails = () => {
               />
             </View>
 
-            {/* Lista opinii */}
             {reviews.length === 0 ? (
               <Text style={styles.noReviews}>Brak opinii. Dodaj pierwszą!</Text>
             ) : (
@@ -359,14 +338,12 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     alignItems: "center",
-    // Usuń paddingTop aby usunąć pustą przestrzeń pod paskiem nawigacji
     paddingTop: 0,
     paddingBottom: 40,
   },
   imageContainer: {
     alignItems: "center",
     width: "100%",
-    // Dodaj margines na górze zamiast paddingu
     marginTop: 0,
   },
   coverImage: {
@@ -375,7 +352,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    alignSelf: "center", // Wyśrodkuj kontener
+    alignSelf: "center",
   },
   headerSection: {
     flexDirection: "row",
@@ -383,7 +360,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: "flex-start",
     width: "100%",
-    marginTop: 8, // Dodano trochę miejsca od góry po usunięciu paddingu
+    marginTop: 8,
   },
   leftHeader: {
     flex: 3,
@@ -456,7 +433,7 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     marginBottom: 16,
-    width: "100%", // Pełna szerokość w kontenerze rodzica
+    width: "100%",
     borderRadius: 12,
     elevation: 2,
     shadowColor: "#000000",

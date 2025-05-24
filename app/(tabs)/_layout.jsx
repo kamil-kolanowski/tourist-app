@@ -9,7 +9,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 const TabIcon = ({ focused, icon, materialIconName }) => {
   const { isDarkTheme } = useTheme();
 
-  // Jeśli podano nazwę ikony Material, użyj jej
   if (materialIconName) {
     return (
       <View
@@ -37,7 +36,6 @@ const TabIcon = ({ focused, icon, materialIconName }) => {
     );
   }
 
-  // W przeciwnym razie użyj obrazka ikony
   return (
     <View
       style={{
@@ -73,7 +71,6 @@ const TabsLayout = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Sprawdź po załadowaniu czy użytkownik jest zalogowany
     if (!loading && !isAuthenticated) {
       console.log("TabsLayout: użytkownik nie zalogowany, przekierowanie");
       router.replace("/auth/login");

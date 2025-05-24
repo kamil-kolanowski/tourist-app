@@ -30,7 +30,6 @@ export const PlacesProvider = ({ children }) => {
 
       if (error) throw error;
 
-      // Dodaj nowe miejsce do lokalnego stanu
       setPlaces([...places, data[0]]);
       return data[0];
     } catch (error) {

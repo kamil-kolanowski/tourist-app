@@ -2,7 +2,6 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { supabase, auth } from "../SimpleSupabaseClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Typy
 type User = {
   id: string;
   email: string;
@@ -50,7 +49,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Funkcje pomocnicze dodane do kontekstu
   const resetPassword = async (email: string) => {
     return auth.resetPasswordForEmail(email);
   };
@@ -66,7 +64,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (result.error) throw result.error;
 
-      // Odśwież dane użytkownika po aktualizacji
       const { data } = await auth.getUser();
       setUser(data.user);
 
@@ -81,7 +78,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     console.log("AuthContext - inicjalizacja");
 
-    // Pobierz aktualną sesję przy ładowaniu
     auth.getSession().then(({ data }) => {
       console.log("AuthContext - pobrano sesję:", !!data.session);
       setSession(data.session);
@@ -89,7 +85,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     });
 
-    // Ustaw nasłuchiwanie na zmiany stanu autentykacji
     const { data } = auth.onAuthStateChange((event, session) => {
       console.log("AuthContext - zmiana stanu auth:", event, !!session);
       setSession(session);
@@ -112,7 +107,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!result.error) {
-        // Po udanym logowaniu, pobierz na nowo dane użytkownika
         const { data } = await auth.getUser();
         console.log("AuthContext - zalogowano użytkownika:", data.user?.id);
         setUser(data.user);
@@ -136,7 +130,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const result = await auth.signUp(email, password, meta);
 
       if (!result.error) {
-        // Po udanej rejestracji, pobierz na nowo dane użytkownika
         const { data } = await auth.getUser();
         console.log("AuthContext - zarejestrowano użytkownika:", data.user?.id);
         setUser(data.user);
