@@ -37,7 +37,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           setThemeMode(savedThemeMode as ThemeMode);
         }
       } catch (error) {
-        console.error("Błąd podczas ładowania ustawień motywu:", error);
+        console.error(error);
       }
     };
 
@@ -52,7 +52,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await AsyncStorage.setItem("themeMode", mode);
     } catch (error) {
-      console.error("Błąd podczas zapisywania ustawień motywu:", error);
+      console.error(error);
     }
   };
 

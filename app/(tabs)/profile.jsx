@@ -37,12 +37,6 @@ const Profile = () => {
 
   const colors = getThemeColors();
 
-  console.log("Profile - stan auth:", {
-    isAuthenticated,
-    hasUser: !!user,
-    userId: user?.id,
-  });
-
   const fetchUserProfile = async () => {
     try {
       if (!user?.id) return;
@@ -54,11 +48,10 @@ const Profile = () => {
 
       if (error) throw error;
       if (data && data.length > 0) {
-        console.log("Pobrano profil użytkownika:", data[0]);
         setUserProfile(data[0]);
       }
     } catch (error) {
-      console.error("Błąd pobierania profilu:", error);
+      console.error(error);
     }
   };
 
@@ -73,11 +66,10 @@ const Profile = () => {
 
       if (error) throw error;
       if (data) {
-        console.log("Liczba opinii użytkownika:", data.length);
         setReviewsCount(data.length);
       }
     } catch (error) {
-      console.error("Błąd pobierania liczby opinii:", error);
+      console.error(error);
     }
   };
 
@@ -117,17 +109,15 @@ const Profile = () => {
         if (placeError) throw placeError;
 
         if (placeData && placeData.length > 0) {
-          console.log("Ostatnio odwiedzone miejsce:", placeData[0].name);
           setLastVisitedPlace(placeData[0]);
         }
       }
     } catch (error) {
-      console.error("Błąd pobierania ostatnio odwiedzonego miejsca:", error);
+      console.error(error);
     }
   };
   useEffect(() => {
     if (user?.id) {
-      console.log("Pobieranie danych dla użytkownika:", user.id);
       const loadUserData = async () => {
         setLoading(true);
         await fetchUserProfile();
@@ -138,7 +128,6 @@ const Profile = () => {
 
       loadUserData();
     } else {
-      console.log("Brak użytkownika do pobrania danych profilu");
       setLoading(false);
     }
   }, [user?.id]);
@@ -148,12 +137,11 @@ const Profile = () => {
       await signOut();
       router.replace("/");
     } catch (error) {
-      console.error("Error signing out:", error);
+      console.error(error);
     }
   };
 
   if (!isAuthenticated || !user) {
-    console.log("Przekierowanie do logowania z profilu");
     const timer = setTimeout(() => {
       router.replace("/auth/login");
     }, 300);

@@ -54,7 +54,7 @@ const SearchScreen = () => {
 
       setResults(filteredResults);
     } catch (error) {
-      console.error("Error searching places:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }

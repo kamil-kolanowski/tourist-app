@@ -72,7 +72,6 @@ const TabsLayout = () => {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      console.log("TabsLayout: użytkownik nie zalogowany, przekierowanie");
       router.replace("/auth/login");
     }
   }, [loading, isAuthenticated]);

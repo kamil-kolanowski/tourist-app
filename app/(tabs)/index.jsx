@@ -73,7 +73,6 @@ const HomeScreen = () => {
   };
 
   useEffect(() => {
-    console.log("Parametry zmieniły się:", params);
     fetchPlaces();
   }, [params.refresh]);
 
@@ -83,17 +82,14 @@ const HomeScreen = () => {
 
   const fetchPlaces = async () => {
     try {
-      console.log("Pobieranie miejsc...");
       setLoading(true);
 
       const { data, error } = await db.from("places").select("*");
 
       if (error) {
-        console.error("Błąd pobierania miejsc:", error);
         throw error;
       }
 
-      console.log("Pobrano miejsc:", data?.length || 0);
       setPlaces(data || []);
       setFilteredPlaces(data || []);
 
@@ -104,7 +100,6 @@ const HomeScreen = () => {
         setCategories(uniqueCategories);
       }
     } catch (error) {
-      console.error("Error fetching places:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);

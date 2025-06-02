@@ -37,28 +37,20 @@ const loadSession = async (): Promise<Session | null> => {
   try {
     const storedSession = await AsyncStorage.getItem("supabase_session");
     if (storedSession) {
-      console.log("Znaleziono zapisaną sesję");
       const session = JSON.parse(storedSession);
 
       // Sprawdź czy token nie wygasł
       if (session.expires_at * 1000 > Date.now()) {
-        console.log("Sesja jest wciąż aktywna, użytkownik:", session.user?.id);
         currentSession = session;
         currentUser = session.user;
         return session;
-      } else {
-        console.log("Sesja wygasła, próba odświeżenia");
       }
 
       // Token wygasł, spróbuj odświeżyć
       if (session.refresh_token) {
         const refreshedSession = await refreshSession(session.refresh_token);
         return refreshedSession;
-      } else {
-        console.log("Brak refresh_token, nie można odświeżyć sesji");
       }
-    } else {
-      console.log("Brak zapisanej sesji");
     }
   } catch (e) {
     console.error("Błąd ładowania sesji:", e);
@@ -70,7 +62,6 @@ const refreshSession = async (
   refresh_token: string
 ): Promise<Session | null> => {
   try {
-    console.log("Próba odświeżenia tokenu");
     const response = await fetch(
       `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
       {
@@ -85,18 +76,12 @@ const refreshSession = async (
 
     if (response.ok) {
       const session = await response.json();
-      console.log("Token odświeżony pomyślnie");
       await saveSession(session);
       return session;
-    } else {
-      console.log("Błąd odświeżenia tokenu:", await response.text());
     }
   } catch (error) {
     console.error("Exception podczas odświeżania sesji:", error);
   }
-
-  // Jeśli odświeżanie nie powiodło się, wyczyść sesję
-  console.log("Czyszczenie sesji po nieudanym odświeżeniu");
   await saveSession(null);
   return null;
 };
@@ -117,17 +102,6 @@ const getAuthHeaders = async () => {
 // Nowa funkcja do sprawdzania stanu logowania
 const getAuthState = async () => {
   const session = currentSession || (await loadSession());
-  console.log(
-    "Aktualny stan sesji:",
-    session
-      ? {
-          isLoggedIn: true,
-          userId: session.user?.id,
-          email: session.user?.email,
-          expires: new Date(session.expires_at * 1000).toLocaleString(),
-        }
-      : "Brak sesji"
-  );
   return session;
 };
 
@@ -140,8 +114,6 @@ export const auth = {
     meta?: { username?: string; avatar_url?: string }
   ) => {
     try {
-      console.log("Rozpoczynam rejestrację dla:", email, "z metadanymi:", meta);
-
       const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
         method: "POST",
         headers: {
@@ -160,8 +132,6 @@ export const auth = {
       });
 
       const data = await response.json();
-      console.log("Odpowiedź rejestracji:", response.ok ? "OK" : "Błąd", data);
-
       if (!response.ok) {
         return {
           error: {
@@ -170,7 +140,6 @@ export const auth = {
         };
       }
 
-      console.log("Pomyślna rejestracja, próba logowania");
       const loginResponse = await fetch(
         `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
         {
@@ -185,10 +154,7 @@ export const auth = {
 
       if (loginResponse.ok) {
         const loginData = await loginResponse.json();
-        console.log("Zalogowano po rejestracji");
         await saveSession(loginData);
-      } else {
-        console.log("Nie udało się zalogować po rejestracji");
       }
 
       return { error: null };
@@ -207,16 +173,12 @@ export const auth = {
     password: string;
   }) => {
     try {
-      console.log("Rozpoczynam logowanie dla:", email);
-
       try {
-        const networkTest = await fetch("https://www.google.com", {
+        await fetch("https://www.google.com", {
           method: "HEAD",
           timeout: 5000,
         });
-        console.log("Test sieci:", networkTest.ok ? "OK" : "Błąd");
       } catch (netError) {
-        console.error("Problem z połączeniem internetowym:", netError);
         return { error: { message: "Sprawdź połączenie z internetem" } };
       }
 
@@ -233,18 +195,15 @@ export const auth = {
       );
 
       const responseText = await response.text();
-      console.log("Odpowiedź serwera (text):", responseText);
 
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        console.error("Odpowiedź nie jest w formacie JSON");
         return { error: { message: "Błąd formatu odpowiedzi serwera" } };
       }
 
       if (!response.ok) {
-        console.error("Błąd logowania:", data);
         return {
           error: {
             message: data.error_description || data.error || "Błąd logowania",
@@ -253,16 +212,14 @@ export const auth = {
       }
 
       if (data.access_token) {
-        console.log("Logowanie zakończone sukcesem, zapisuję sesję");
         await saveSession(data);
       } else {
-        console.error("Brak tokenu w odpowiedzi:", data);
         return { error: { message: "Nieprawidłowa odpowiedź serwera" } };
       }
 
       return { error: null };
     } catch (error: any) {
-      console.error("Wyjątek podczas logowania:", error);
+      console.error(error);
       return { error: { message: error.message || "Nieznany błąd" } };
     }
   },
@@ -408,7 +365,6 @@ export const db = {
         const data = await response.json();
         return { data, error: null };
       } catch (error) {
-        console.error(`Select error for ${table}:`, error);
         return { data: null, error };
       }
     },
@@ -430,7 +386,6 @@ export const db = {
         const data = await response.json();
         return { data, error: null };
       } catch (error) {
-        console.error(`Insert error for ${table}:`, error);
         return { data: null, error };
       }
     },
@@ -445,17 +400,13 @@ export const db = {
           );
 
           if (!response.ok) {
-            console.error(
-              `Error fetching ${table} with ${column}=eq.${value}:`,
-              response.statusText
-            );
+            console.error(response.statusText);
             return { data: null, error: { message: response.statusText } };
           }
 
           const data = await response.json();
           return { data: data[0] || null, error: null };
         } catch (error) {
-          console.error(`Single query error for ${table}:`, error);
           return { data: null, error };
         }
       },
@@ -469,10 +420,7 @@ export const db = {
           );
 
           if (!response.ok) {
-            console.error(
-              `Error fetching ${table} with ${column}=eq.${value}:`,
-              response.statusText
-            );
+            console.error(response.statusText);
             return { data: null, error: { message: response.statusText } };
           }
 
@@ -486,7 +434,6 @@ export const db = {
             order: (column: string, { ascending = true } = {}) => {},
           };
         } catch (error) {
-          console.error(`Select with eq error for ${table}:`, error);
           return { data: null, error };
         }
       },
@@ -527,14 +474,14 @@ export const storage = {
 
         if (!response.ok) {
           const error = await response.json();
-          console.error("Upload error:", error);
+          console.error(error);
           return { data: null, error };
         }
 
         const responseData = await response.json();
         return { data: responseData, error: null };
       } catch (error) {
-        console.error(`Upload error for ${bucket}/${path}:`, error);
+        console.error(error);
         return { data: null, error };
       }
     },
@@ -563,7 +510,7 @@ export const storage = {
 
         return { data: {}, error: null };
       } catch (error) {
-        console.error(`Remove error for ${bucket}:`, error);
+        console.error(error);
         return { data: null, error };
       }
     },

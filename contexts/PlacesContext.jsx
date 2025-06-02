@@ -18,7 +18,7 @@ export const PlacesProvider = ({ children }) => {
       setPlaces(data || []);
       setLastUpdate(new Date());
     } catch (error) {
-      console.error("Error fetching places:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -33,7 +33,7 @@ export const PlacesProvider = ({ children }) => {
       setPlaces([...places, data[0]]);
       return data[0];
     } catch (error) {
-      console.error("Error adding place:", error);
+      console.error(error);
       throw error;
     }
   };

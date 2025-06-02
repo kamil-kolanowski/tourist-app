@@ -50,19 +50,16 @@ const PlaceDetails = () => {
     try {
       setLoading(true);
 
-      console.log("Rozpoczynam ładowanie danych dla miejsca:", id);
-
       const { data: placeData, error: placeError } = await db
         .from("places")
         .eq("id", id)
         .single();
 
       if (placeError) {
-        console.error("Błąd pobierania miejsca:", placeError);
+        console.error(placeError);
         throw placeError;
       }
 
-      console.log("Dane miejsca pobrane pomyślnie:", placeData?.name);
       setPlace(placeData);
 
       if (placeData) {
@@ -70,17 +67,15 @@ const PlaceDetails = () => {
         setRatingsCount(placeData.ratings_count || 0);
       }
 
-      console.log("Pobieranie opinii dla miejsca:", id);
       try {
         const reviewsData = await fetchReviewsWithUserData(id);
-        console.log(`Pobrano ${reviewsData.length} opinii dla miejsca ${id}`);
         setReviews(reviewsData);
       } catch (reviewsError) {
-        console.error("Błąd pobierania opinii:", reviewsError);
+        console.error(reviewsError);
         setReviews([]);
       }
     } catch (error) {
-      console.error("Error loading place data:", error);
+      console.error(error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -134,7 +129,7 @@ const PlaceDetails = () => {
         }
       })
       .catch((err) => {
-        console.error("Błąd podczas otwierania Google Maps:", err);
+        console.error(err);
       });
   };
 

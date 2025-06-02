@@ -76,17 +76,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log("AuthContext - inicjalizacja");
-
     auth.getSession().then(({ data }) => {
-      console.log("AuthContext - pobrano sesję:", !!data.session);
+      console.log(!!data.session);
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
 
     const { data } = auth.onAuthStateChange((event, session) => {
-      console.log("AuthContext - zmiana stanu auth:", event, !!session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -100,7 +97,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     session,
     loading,
     signIn: async (email: string, password: string) => {
-      console.log("AuthContext - próba logowania:", email);
       const result = await auth.signInWithPassword({
         email,
         password,
@@ -108,10 +104,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!result.error) {
         const { data } = await auth.getUser();
-        console.log("AuthContext - zalogowano użytkownika:", data.user?.id);
         setUser(data.user);
       } else {
-        console.error("AuthContext - błąd logowania:", result.error);
+        console.error(result.error);
       }
 
       return result;
@@ -121,24 +116,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password: string,
       meta?: { username?: string; avatar_url?: string }
     ) => {
-      console.log(
-        "AuthContext - próba rejestracji:",
-        email,
-        "z metadanymi:",
-        meta
-      );
       const result = await auth.signUp(email, password, meta);
 
       if (!result.error) {
         const { data } = await auth.getUser();
-        console.log("AuthContext - zarejestrowano użytkownika:", data.user?.id);
         setUser(data.user);
       }
 
       return result;
     },
     signOut: async () => {
-      console.log("AuthContext - wylogowywanie");
       const result = await auth.signOut();
       if (!result.error) {
         setUser(null);

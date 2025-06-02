@@ -38,12 +38,6 @@ const AddPlace = () => {
   const paperTheme = usePaperTheme();
   const { isDarkTheme } = useTheme();
 
-  console.log("AddPlace - stan auth:", {
-    isAuthenticated,
-    hasUser: !!user,
-    userId: user?.id,
-  });
-
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -57,7 +51,6 @@ const AddPlace = () => {
         setImage(result.assets[0]);
       }
     } catch (error) {
-      console.error("Błąd podczas wybierania zdjęcia:", error);
       alert("Wystąpił błąd podczas wybierania zdjęcia");
     }
   };
@@ -70,10 +63,8 @@ const AddPlace = () => {
       const fileName = `place_${user.id}_${Date.now()}`;
       const publicUrl = await uploadImageToStorage(image.uri, fileName);
 
-      console.log("Przesłano zdjęcie pomyślnie, URL:", publicUrl);
       return publicUrl;
     } catch (error) {
-      console.error("Błąd podczas przesyłania zdjęcia:", error);
       alert("Wystąpił błąd podczas przesyłania zdjęcia");
       return null;
     } finally {
@@ -82,7 +73,6 @@ const AddPlace = () => {
   };
 
   if (!isAuthenticated || !user) {
-    console.log("Przekierowanie do logowania z add-place");
     const timer = setTimeout(() => {
       router.replace("/auth/login");
     }, 300);
@@ -125,16 +115,11 @@ const AddPlace = () => {
         image_url: imageUrl,
       };
 
-      console.log("Dodaję miejsce:", placeData);
-
       const { data, error } = await db.from("places").insert([placeData]);
 
       if (error) {
-        console.error("Błąd dodawania miejsca:", error);
         throw error;
       }
-
-      console.log("Dodano miejsce:", data);
 
       setName("");
       setDescription("");
@@ -148,7 +133,6 @@ const AddPlace = () => {
         params: { refresh: Date.now() },
       });
     } catch (error) {
-      console.error("Error adding place:", error);
       alert("Wystąpił błąd podczas dodawania miejsca");
     } finally {
       setLoading(false);

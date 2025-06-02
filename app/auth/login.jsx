@@ -20,9 +20,7 @@ const Login = () => {
   const theme = useTheme();
 
   useEffect(() => {
-    console.log("Login - stan auth:", { isAuthenticated, userId: user?.id });
     if (isAuthenticated && user) {
-      console.log("Użytkownik już zalogowany, przekierowuję do (tabs)");
       router.replace("/(tabs)");
     }
   }, [isAuthenticated, user]);
@@ -36,24 +34,17 @@ const Login = () => {
     setLoading(true);
     setError("");
 
-    console.log("Próba logowania z danymi:", {
-      email,
-      passwordLength: password.length,
-    });
-
     try {
       const { error: signInError } = await signIn(email, password);
 
       if (signInError) {
-        console.error("Błąd logowania:", signInError);
         setError(signInError.message);
         return;
       }
 
-      console.log("Logowanie zakończone sukcesem, przekierowanie");
       router.replace("/(tabs)");
     } catch (error) {
-      console.error("Złapany błąd podczas logowania:", error);
+      console.error(error);
       setError("Wystąpił błąd podczas logowania");
     } finally {
       setLoading(false);

@@ -41,7 +41,7 @@ const AddReview = () => {
             setPlace(data);
           }
         } catch (error) {
-          console.error("Błąd pobierania informacji o miejscu:", error);
+          console.error(error);
         }
       }
     };
@@ -64,7 +64,7 @@ const AddReview = () => {
         params: { refresh: Date.now() },
       });
     } catch (error) {
-      console.error("Błąd dodawania opinii:", error);
+      console.error(error);
       alert("Wystąpił błąd podczas dodawania opinii");
     } finally {
       setLoading(false);

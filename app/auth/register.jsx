@@ -48,7 +48,7 @@ const Register = () => {
         setProfileImage(result.assets[0]);
       }
     } catch (error) {
-      console.error("Błąd podczas wybierania zdjęcia:", error);
+      console.error(error);
       alert("Wystąpił błąd podczas wybierania zdjęcia");
     }
   };
@@ -66,7 +66,7 @@ const Register = () => {
 
       return publicUrl;
     } catch (error) {
-      console.error("Błąd podczas przesyłania zdjęcia:", error);
+      console.error(error);
       return null;
     } finally {
       setUploadingImage(false);
@@ -106,8 +106,6 @@ const Register = () => {
       const { data: userData } = await auth.getUser();
 
       if (userData?.user?.id) {
-        console.log("Tworzenie profilu dla użytkownika:", userData.user.id);
-
         let avatarUrl = null;
         if (profileImage) {
           avatarUrl = await handleUploadProfileImage(userData.user.id);
@@ -132,7 +130,7 @@ const Register = () => {
         }
 
         if (profileError) {
-          console.error("Błąd tworzenia profilu:", profileError);
+          console.error(profileError);
         }
       }
 
