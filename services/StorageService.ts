@@ -1,4 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+
+// Klucz API Supabase
+const SUPABASE_KEY =
+  Constants.expoConfig?.extra?.SUPABASE_KEY || process.env.SUPABASE_KEY;
+const SUPABASE_URL =
+  Constants.expoConfig?.extra?.SUPABASE_URL || process.env.SUPABASE_URL;
 
 // Przesyłanie zdjęcia
 export const uploadImage = async (uri: string, fileName: string) => {
@@ -20,10 +27,6 @@ export const uploadImage = async (uri: string, fileName: string) => {
       console.error(e);
     }
 
-    // Klucz API Supabase
-    const SUPABASE_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs";
-
     const formData = new FormData();
     formData.append("file", {
       uri: uri,
@@ -39,7 +42,7 @@ export const uploadImage = async (uri: string, fileName: string) => {
     };
 
     const response = await fetch(
-      `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/${bucketName}/${filePath}`,
+      `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`,
       {
         method: "POST",
         headers: headers,
@@ -53,7 +56,7 @@ export const uploadImage = async (uri: string, fileName: string) => {
       throw new Error(`Błąd przesyłania: ${response.status} ${errorText}`);
     }
 
-    const publicUrl = `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`;
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${filePath}`;
     return publicUrl;
   } catch (error) {
     console.error(error);
@@ -77,15 +80,14 @@ export const deleteImage = async (filePath: string, isProfileImage = false) => {
     }
 
     const headers: any = {
-      apikey:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
+      apikey: SUPABASE_KEY,
       Authorization: sessionData?.access_token
         ? `Bearer ${sessionData.access_token}`
-        : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
+        : `Bearer ${SUPABASE_KEY}`,
     };
 
     const response = await fetch(
-      `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/${bucketName}/${filePath}`,
+      `${SUPABASE_URL}/storage/v1/object/${bucketName}/${filePath}`,
       {
         method: "DELETE",
         headers: headers,
@@ -105,5 +107,5 @@ export const deleteImage = async (filePath: string, isProfileImage = false) => {
 
 export const getImageURL = (filePath: string, isProfileImage = false) => {
   const bucketName = isProfileImage ? "profile-images" : "attraction-images";
-  return `https://lxduypbtgbwmkcrqvduv.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`;
+  return `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${filePath}`;
 };

@@ -14,6 +14,10 @@ import { db } from "../../SimpleSupabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../contexts/ThemeContext";
+import Constants from "expo-constants";
+
+const SUPABASE_KEY =
+  Constants.expoConfig?.extra?.SUPABASE_KEY || process.env.SUPABASE_KEY;
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -78,12 +82,11 @@ const Profile = () => {
       if (!user?.id) return;
 
       const headers = {
-        apikey:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs",
+        apikey: SUPABASE_KEY,
         "Content-Type": "application/json",
         Authorization: user?.id
           ? `Bearer ${user.id}`
-          : `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4ZHV5cGJ0Z2J3bWtjcnF2ZHV2Iiwicm9zZSI6ImFub24iLCJpYXQiOjE3NDc4MTQ3MTEsImV4cCI6MjA2MzM5MDcxMX0.c6efgkhJ6ayi3UJeAjjJcWKD82uzf6Hq3hjuJATEPvs`,
+          : `Bearer ${SUPABASE_KEY}`,
       };
 
       const { data: reviewsData, error: reviewError } = await db
